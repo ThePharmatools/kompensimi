@@ -193,7 +193,7 @@ tr.excl td{color:var(--muted)}
  <div class="card">
   <h2>Llogaritja për produkt</h2>
   <div class="tbl"><table id="calcTbl"></table></div>
-  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
+  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Produktet me skonto 0 nuk kompensohen. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
  </div>
  <div class="card" id="outCard" style="display:none">
   <h2>Produkte në shitje, por jashtë listës së kompensimit</h2>
@@ -270,6 +270,7 @@ tr.excl td{color:var(--muted)}
 
 <script id="core">
 /* ===== Llogaritja (pa DOM) ===== */
+const isZeroDisc = d => Math.abs(d||0) < 0.0005; /* skonto 0 → nuk kompensohet */
 const norm = s => String(s ?? '').trim().replace(/\s+/g,' ').toLowerCase();
 
 function calcRow(p, s, rates){
@@ -284,6 +285,7 @@ function calcRow(p, s, rates){
   if(!isFinite(r.avgDisc)) r.avgDisc = 0;
   r.min = s.min; r.max = s.max;
   r.wsNet = r.wsEur * (1 - r.avgDisc);
+  if(isZeroDisc(r.avgDisc)){ r.status='nodisc'; r.comp=0; return r; }
   if(p.excl){ r.status='excl'; r.comp=0; return r; }
   r.profit = r.wsNet - r.cifNet;
   r.pct = r.wsNet ? r.profit / r.wsNet : 0;
@@ -485,7 +487,8 @@ function crossCheck(compRows, sales, list, rates){
     /* rillogaritja: shitjet reale + kursi zyrtar + CIF Net i distributorit */
     if(s){
       const cifNet = R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
-      const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourComp=wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
+      const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourComp = isZeroDisc(R.avgDisc) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
+      if(isZeroDisc(R.avgDisc)) R.issues.push(['p-no','Skonto 0 – nuk kompensohet']);
     } else R.ourComp=0;
     R.diff=(R.theirComp||0)-(R.ourComp||0);
     /* vërejtjet */
@@ -497,7 +500,8 @@ function crossCheck(compRows, sales, list, rates){
     if(g && R.theirRate && Math.abs(R.theirRate-R.officialRate)>0.005) R.issues.push(['p-warn',`Kursi: Excel ${+R.theirRate.toFixed(2)}, zyrtar ${R.officialRate}`]);
     if(g && R.theirCif!=null && R.akbpmCif!=null && R.theirCif>R.akbpmCif+0.005) R.issues.push(['p-bad',`CIF ${R.theirCif} mbi AKBPM ${R.akbpmCif}`]);
     const noComp = g && g.rows.every(r=>r.comp==null);
-    if(noComp && s) R.issues.push(['p-info','Distributori nuk e ka kompensuar këtë produkt']);
+    if(noComp && s && !isZeroDisc(R.avgDisc)) R.issues.push(['p-info','Distributori nuk e ka kompensuar këtë produkt']);
+    else if(noComp) {}
     else if(g && R.formulaComp!=null && isFinite(R.formulaComp) && Math.abs(R.formulaComp-R.theirComp)>0.05) R.issues.push(['p-bad',`Gabim formule: me të dhënat e tyre del ${R.formulaComp.toFixed(2)}, jo ${R.theirComp.toFixed(2)}`]);
     if(g && g.rows.some(r=>!String(r.inv||'').trim())) R.issues.push(['p-warn','Mungon nr. i faturës']);
     out.push(R);
@@ -537,8 +541,8 @@ const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 const MONTHS=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
 const monthLabel = m => { if(!m) return '(pa muaj)'; const [y,mm]=m.split('-'); return MONTHS[+mm-1]+' '+y; };
 const dt = t => t ? new Date(t).toLocaleString('sq-AL',{dateStyle:'medium',timeStyle:'short'}) : '';
-const STATUS={ok:'Kompensohet',excl:'Përjashtuar',nosale:'Pa shitje'};
-const STATUS_LONG={ok:'Kompensohet',excl:'Përjashtuar',nosale:'Pa shitje'};
+const STATUS={ok:'Kompensohet',nodisc:'Skonto 0',excl:'Përjashtuar',nosale:'Pa shitje'};
+const STATUS_LONG={ok:'Kompensohet',nodisc:'Skonto 0 – nuk kompensohet',excl:'Përjashtuar',nosale:'Pa shitje'};
 function msg(el, type, text){ $(el).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : ''; }
 const products = () => PRODUCT_LIST;
 const needXlsx = () => { if(typeof XLSX==='undefined'){ alert('Libraria Excel nuk u ngarkua. Kontrollo internetin dhe rifresko faqen.'); return false; } return true; };
@@ -755,6 +759,7 @@ function renderCheck(){
     if(r.min!=null && r.max!=null && Math.abs(r.max-r.min)>0.005) notes.push(['p-warn','Shitur me disa çmime']);
     if(r.qtyNet<0) notes.push(['p-warn','Kthime më shumë se shitje (sasi negative)']);
     if(r.status==='nosale') notes.push(['p-no','Pa shitje këtë muaj']);
+    if(r.status==='nodisc') notes.push(['p-no',STATUS_LONG.nodisc]);
     if(r.status==='ok' && r.comp<0) notes.push(['p-info','Kompensim negativ']);
     let dP=null,dQ=null;
     if(p && p.wsLek!=null && r.wsLek!=null){ dP=r.wsLek-p.wsLek; if(Math.abs(dP)>0.005) notes.push(['p-warn','Çmimi ndryshoi']); }
