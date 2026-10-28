@@ -164,7 +164,7 @@ tr.excl td{color:var(--muted)}
  <div class="card">
   <h2>Llogaritja për produkt</h2>
   <div class="tbl"><table id="calcTbl"></table></div>
-  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Nuk kompensohen produktet me zbritje mesatare 0–2% dhe ato me sasi neto ≤ 0 (kthime ≥ shitje). Vlerat negative përfshihen në total.</p>
+  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Nuk kompensohen produktet me zbritje mesatare 0–2%. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
  </div>
  <div class="card" id="outCard" style="display:none">
   <h2>Produkte në shitje, por jashtë listës së kompensimit</h2>
@@ -257,13 +257,12 @@ function calcRow(p, s, rates){
   r.min = s.min; r.max = s.max;
   r.wsNet = r.wsEur * (1 - r.avgDisc);
   if(r.avgDisc <= MIN_DISC + 1e-9){ r.status='nodisc'; r.comp=0; return r; }
-  if(r.qtyNet<=0){ r.status='noqty'; r.comp=0; return r; }
   if(p.excl){ r.status='excl'; r.comp=0; return r; }
   r.profit = r.wsNet - r.cifNet;
   r.pct = r.wsNet ? r.profit / r.wsNet : 0;
   r.pl = r.profit * r.qtyNet;
   r.p15val = r.wsNet * r.qtyNet * 0.15;
-  r.p15box = r.p15val / r.qtyNet;
+  r.p15box = r.qtyNet ? r.p15val / r.qtyNet : 0;
   r.comp = r.p15val - r.pl;
   r.status = 'ok';
   return r;
@@ -620,7 +619,7 @@ function renderCheck(){
   for(const r of now.rows){ const p=pm.get(norm(r.name)); if(r.status==='nosale' && !(p && p.status!=='nosale')) continue;
     const notes=[];
     if(r.min!=null && r.max!=null && Math.abs(r.max-r.min)>0.005) notes.push(['p-warn','Shitur me disa çmime']);
-    if(r.status==='noqty') notes.push(['p-bad',STATUS_LONG.noqty]);
+    if(r.qtyNet<0) notes.push(['p-warn','Kthime më shumë se shitje (sasi negative)']);
     if(r.status==='nodisc') notes.push(['p-no',STATUS_LONG.nodisc]);
     if(r.status==='nosale') notes.push(['p-no','Pa shitje këtë muaj']);
     if(r.status==='ok' && r.comp<0) notes.push(['p-info','Kompensim negativ']);
