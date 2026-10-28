@@ -159,7 +159,7 @@
   {
    "n": "Citoles – Film tabl. 10mg x28",
    "cif": 8,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": [
     "Citoles 10 mg x 28 tabs - Abdiibrahim",
@@ -171,7 +171,7 @@
   {
    "n": "Citoles – Film tabl. 20mg x28",
    "cif": 9.5,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": [
     "Citoles 20mg x 28tab (escitalo",
@@ -255,7 +255,7 @@
   {
    "n": "Notuss SR – Tabl. çlirim të zgjatur 50mg x20",
    "cif": 3,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": [
     "Notuss SR 50mg",
@@ -280,7 +280,7 @@
   {
    "n": "Rebone Plus – Tabl. 70mg+5600IU x4",
    "cif": 3.5566,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
    "al": [
     "Rebone Plus 70 mg x 4 tab",
@@ -291,7 +291,7 @@
   {
    "n": "Apranax Plus – Xhel (100mg+50mg)/g 50g",
    "cif": 4.75,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
    "al": [
     "Apranax Plus GEL 10+5% 50gr",
@@ -302,7 +302,7 @@
   {
    "n": "Attex – Kaps. 10mg x28",
    "cif": 12,
-   "disc": 0,
+   "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 10 mg x 28 caps",
@@ -312,7 +312,7 @@
   {
    "n": "Attex – Kaps. 18mg x28",
    "cif": 17,
-   "disc": 0,
+   "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 18mg x 28 caps",
@@ -322,7 +322,7 @@
   {
    "n": "Attex – Kaps. 40mg x28",
    "cif": 25,
-   "disc": 0,
+   "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 40 mg x 28 caps",
@@ -332,7 +332,7 @@
   {
    "n": "Attex – Kaps. 80mg x28",
    "cif": 32,
-   "disc": 0,
+   "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 80mg x 28Cps"
