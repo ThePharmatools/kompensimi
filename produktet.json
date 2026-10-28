@@ -1,6 +1,6 @@
 {
  "source": "AKBPM – Çmimet CIF të importeve të barnave, përditësuar 13.02.2026",
- "updated": "",
+ "updated": "2026-10-28",
  "products": [
   {
    "n": "Tanflex ColdAway – Film tabl. 200mg+30mg x24",
@@ -68,7 +68,7 @@
   },
   {
    "n": "Rivoksar – Film tabl. 10mg x10",
-   "cif": 4.5,
+   "cif": 10,
    "disc": 0.32,
    "rim": true,
    "al": [
@@ -303,7 +303,7 @@
    "n": "Attex – Kaps. 10mg x28",
    "cif": 12,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Attex 10 mg x 28 caps",
     "Attex 10mg x 28Cps"
@@ -313,7 +313,7 @@
    "n": "Attex – Kaps. 18mg x28",
    "cif": 17,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Attex 18mg x 28 caps",
     "Attex 18mg x 28Cps"
@@ -323,7 +323,7 @@
    "n": "Attex – Kaps. 40mg x28",
    "cif": 25,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Attex 40 mg x 28 caps",
     "Attex 40mg x 28Cps"
@@ -333,7 +333,7 @@
    "n": "Attex – Kaps. 80mg x28",
    "cif": 32,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Attex 80mg x 28Cps"
    ]
@@ -381,7 +381,7 @@
    "n": "Alyse – Kaps. 75mg x28",
    "cif": 2.88,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Alyse 75mg x28cp Pregabaline",
     "Alyse 75mg x 28Cps"
@@ -391,7 +391,7 @@
    "n": "Alyse – Kaps. 150mg x28",
    "cif": 4.24,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Alyse150mg x28cp Pregabaline",
     "Alyse 150mg x28 Cps"
@@ -401,7 +401,7 @@
    "n": "Alyse – Kaps. 150mg x56",
    "cif": 8.49,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": []
   },
   {
@@ -434,7 +434,7 @@
    "n": "Apranax Plus – Film tabl. 550mg+30mg x20",
    "cif": 4,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Apranax Plus 550mg+30mg x 20 tabs-Abdiibrahim",
     "Apranax Plus 550mg+30mg x20 Tbl",
@@ -614,7 +614,7 @@
    "n": "Attex – Tretësirë orale 4mg/ml 100ml",
    "cif": 28,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Attex 4mg/ml x 100ml Oral Sol"
    ]
@@ -769,7 +769,7 @@
    "n": "Apranax Fort – Film tabl. 550mg x10",
    "cif": 1.03,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Apranax Fort 550mg x 10 Tbl",
     "APRANAX FORT 550MG 10 FILM COATED TABLEТ"
@@ -808,14 +808,14 @@
    "n": "Brequal – Kaps. inhalim 50µg+100µg x60 + Qhaler",
    "cif": 3.95,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": []
   },
   {
    "n": "Brequal – Kaps. inhalim 50µg+250µg x60 + Qhaler",
    "cif": 4.35,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Brequal 50/250mcg x 60Cps+1Pompe"
    ]
@@ -824,7 +824,7 @@
    "n": "Brequal – Kaps. inhalim 50µg+500µg x60 + Qhaler",
    "cif": 5.2,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Brequal 50mcg/500mcg x 60cap",
     "Brequal 50/500mcg x60Cps+1Pompe"
