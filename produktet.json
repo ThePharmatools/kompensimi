@@ -691,28 +691,28 @@
   {
    "n": "Gelgo – Xhel 1%+5% 50g",
    "cif": 4,
-   "disc": 0,
+   "disc": 0.08,
    "rim": false,
    "al": []
   },
   {
    "n": "Livagy – Ovula vaginale 750mg+200mg+100mg x7",
    "cif": 6,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": []
   },
   {
    "n": "Tanflex Fort – Spraj oral 0.3% 15ml",
    "cif": 3.24,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
    "al": []
   },
   {
    "n": "Tanflex Fort – Spraj oral 0.3% 30ml",
    "cif": 5.25,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
    "al": [
     "Tanflex Fort 30% x 2 Oral Spray x 30 ml -Abdiibrahim",
@@ -757,7 +757,7 @@
   {
    "n": "Tensart Plus – Tabl. 32mg+12.5mg x28",
    "cif": 7.17,
-   "disc": 0,
+   "disc": 0.15,
    "rim": false,
    "al": [
     "Tensart Plus 32mg + 12.5mg * 28 tab",
@@ -768,7 +768,7 @@
   {
    "n": "Apranax Fort – Film tabl. 550mg x10",
    "cif": 1.03,
-   "disc": 0,
+   "disc": 0.1,
    "rim": true,
    "al": [
     "Apranax Fort 550mg x 10 Tbl",
@@ -778,7 +778,7 @@
   {
    "n": "Apranax Fort – Film tabl. 550mg x20",
    "cif": 2.05,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
    "al": []
   },
