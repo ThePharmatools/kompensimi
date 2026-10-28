@@ -1,5 +1,5 @@
 {
- "source": "AKBPM – Çmimet CIF të importeve të barnave, përditësuar 13.02.2026",
+ "source": "Abdi Ibrahim – Discount Rates 2026 (CIF 2026 dhe zbritja 2026)",
  "updated": "2026-10-28",
  "products": [
   {
@@ -11,122 +11,137 @@
     "Tanflex ColdAway x 24 tabs - Abdiibrahim",
     "Tanflex ColdAway  x24 tb",
     "Tanflex ColdAway  x24 Tbl"
-   ]
+   ],
+   "sap": "M100100500241145"
   },
   {
    "n": "Fixdual – Film tabl. 5mg+10mg x30",
-   "cif": 15,
+   "cif": 15.0,
    "disc": 0.09,
    "rim": false,
    "al": [
     "Fixdual 5mg/10mg x 30 tabs - Abdiibrahim",
     "Fixdual 5mg/10mg x30 Tbl",
     "FIXDUAL 5MG/10MG 30 F.TABLETS"
-   ]
+   ],
+   "sap": "M100100500301028"
   },
   {
    "n": "Posagil – Gastrorez. tabl. 100mg x24",
-   "cif": 80,
-   "disc": 0.4,
+   "cif": 80.0,
+   "disc": 0.25,
    "rim": true,
    "al": [
     "Posagil 100 mg x 24 tabs - Abdiibrahim",
     "POSAGIL100mgx24gastro-resistant tab(I) R"
-   ]
+   ],
+   "sap": "M100100500241890"
   },
   {
    "n": "Coriva – Kaps. inhalim 12mcg x30 + inhalator",
-   "cif": 7,
-   "disc": 0,
+   "cif": 7.0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   },
   {
    "n": "Epixx XR – Tabl. çlirim të zgjatur 500mg x50",
    "cif": 8.36,
-   "disc": 0.34,
+   "disc": 0.3442,
    "rim": true,
    "al": [
     "Epixx XR 500 mg x 50 tabs - Abdiibrahim",
     "Epixx XR 500mg x50 Tbl",
     "EPIXX XR 500MG EXTENDED-RELEASE FILM(50COATED TAB)"
-   ]
+   ],
+   "sap": "M100100500500842"
   },
   {
    "n": "Dyloxia – Kaps. 30mg x28",
    "cif": 9.05,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500282431"
   },
   {
    "n": "Dyloxia – Kaps. 60mg x28",
    "cif": 13.64,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500282432"
   },
   {
    "n": "Rivoksar – Film tabl. 10mg x10",
-   "cif": 10,
-   "disc": 0.32,
+   "cif": 4.5,
+   "disc": 0.3227,
    "rim": true,
    "al": [
     "Rivoksar 10 mg x 10 tabs - Abdiibrahim",
     "Rivoksar 10 mg x 10 tabs Rivaroxaban",
     "Rivoksar 10mg x10 Tbl",
     "RIVOKSAR 10MG 10 F.TB"
-   ]
+   ],
+   "sap": "M100100500101895"
   },
   {
    "n": "Rivoksar – Film tabl. 15mg x28",
    "cif": 6.7,
-   "disc": 0.2,
+   "disc": 0.2016,
    "rim": true,
    "al": [
     "Rivoksar 15 mg x 28 tabs - Abdiibrahim",
     "Rivoksar 15mg x28 Tbl",
     "RIVOKSAR 15MG 28 F.TB"
-   ]
+   ],
+   "sap": "M100100500281896"
   },
   {
    "n": "Rivoksar – Film tabl. 20mg x28",
    "cif": 6.7,
-   "disc": 0.2,
+   "disc": 0.2016,
    "rim": true,
    "al": [
     "Rivoksar 20 mg x 28 tabs - Abdiibrahim",
     "Rivoksar 20mg x28 Tbl",
     "RIVOKSAR 20MG 28 F.TB"
-   ]
+   ],
+   "sap": "M100100500281897"
   },
   {
    "n": "Abetyl – Tabl. 250mg x120",
-   "cif": 120,
-   "disc": 0,
+   "cif": 120.0,
+   "disc": 0.5,
    "rim": false,
-   "al": []
+   "al": [
+    "Abiraterone 250mg x 120 tab Abdiibrahim"
+   ],
+   "sap": "M100100501201972"
   },
   {
    "n": "Viscap – Film tabl. 30mg x28",
-   "cif": 55,
-   "disc": 0,
+   "cif": 55.0,
+   "disc": 0.0,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100200500281353"
   },
   {
    "n": "Viscap – Film tabl. 60mg x28",
-   "cif": 65,
-   "disc": 0,
+   "cif": 65.0,
+   "disc": 0.0,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100200500281354"
   },
   {
    "n": "Viscap – Film tabl. 90mg x28",
-   "cif": 85,
-   "disc": 0,
+   "cif": 85.0,
+   "disc": 0.0,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500281355"
   },
   {
    "n": "Vasoserc Forte – Tabl. 16mg x30",
@@ -136,14 +151,16 @@
    "al": [
     "Vasoserc Forte 16mg x 30tabs- Abdiibrahim",
     "Vasoserc forte 16mg x30 Tbl"
-   ]
+   ],
+   "sap": "M100100500300313"
   },
   {
    "n": "Vasoserc Bid – Tabl. 24mg x30",
    "cif": 2.03,
    "disc": 0.09,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500300375"
   },
   {
    "n": "Epixx – Film tabl. 500mg x50",
@@ -154,11 +171,12 @@
     "Epixx 500 mg x 50 tabs - Abdiibrahim",
     "Epixx 500mg x 50Tbl",
     "EPIXX 500 MG. 50 FILM TABLETS"
-   ]
+   ],
+   "sap": "M100100500500364"
   },
   {
    "n": "Citoles – Film tabl. 10mg x28",
-   "cif": 8,
+   "cif": 8.0,
    "disc": 0.09,
    "rim": false,
    "al": [
@@ -166,7 +184,8 @@
     "Citoles 10mg x 28tab (escitalo",
     "Citoles 10mg x 28Tbl",
     "CITOLES 10 MG. 28 FILM TABLETS"
-   ]
+   ],
+   "sap": "M100100500280373"
   },
   {
    "n": "Citoles – Film tabl. 20mg x28",
@@ -177,7 +196,8 @@
     "Citoles 20mg x 28tab (escitalo",
     "Citoles 20mg x28 Tbl",
     "CITOLES 20 MG. 28 FILM TABLETS"
-   ]
+   ],
+   "sap": "M100100500280374"
   },
   {
    "n": "Tilanta – Film tabl. 90mg x56",
@@ -189,12 +209,13 @@
     "Tilanta 90 mg x 56 tab Ticagrelor",
     "Tilanta 90mg x56 Tbl",
     "TILANTA 90 MG 56 FIL COATED TABLETS"
-   ]
+   ],
+   "sap": "M100100500562080"
   },
   {
    "n": "Risonel – Spraj hundësh 0.05% 9g (70 doza)",
    "cif": 3.8,
-   "disc": 0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   },
@@ -207,7 +228,8 @@
     "Risonel 5% Nasal Spray x 18 gr - Abdiibrahim",
     "Risonel Nasal Spray 0.05% x18g Spray",
     "RISONEL % 0.05 BURUN SPREYI"
-   ]
+   ],
+   "sap": "M100200500180581"
   },
   {
    "n": "Demax – Film tabl. 10mg x30",
@@ -219,11 +241,12 @@
     "Demax 10mg x30tb Memantine",
     "Demax 10mg  x30 Tbl",
     "DEMAX 10MG 30 FILM TABLETS"
-   ]
+   ],
+   "sap": "M100100500300357"
   },
   {
    "n": "Epixx – Tretësirë orale 100mg/ml 300ml",
-   "cif": 9,
+   "cif": 9.0,
    "disc": 0.2,
    "rim": true,
    "al": [
@@ -231,12 +254,13 @@
     "Epixx Sir 100mg/ml-300ml",
     "Epixx 100mg/ml  x300ml Syr",
     "EPIXX ORAL SOL. 300 ML."
-   ]
+   ],
+   "sap": "M100100503000578"
   },
   {
    "n": "Tilanta – Film tabl. 60mg x56",
    "cif": 14.5,
-   "disc": 0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   },
@@ -250,32 +274,36 @@
     "Tanflex Plus Spray 30 ml 0.15 %",
     "Tanflex Plus 0.15% x30ml Spray",
     "TANFLEX PLUS(0.15benzyd+0.12chlorhexid)spray30ml"
-   ]
+   ],
+   "sap": "M100100500300307"
   },
   {
    "n": "Notuss SR – Tabl. çlirim të zgjatur 50mg x20",
-   "cif": 3,
+   "cif": 3.0,
    "disc": 0.09,
    "rim": false,
    "al": [
     "Notuss SR 50mg",
     "Notuss SR 50mg x 20Tbl",
     "NOTUSS 50 MG SR 20 TB"
-   ]
+   ],
+   "sap": "M100200500201341"
   },
   {
    "n": "Diclomec – Injeksion 75mg/3ml x4 amp.",
    "cif": 0.8,
-   "disc": 0,
+   "disc": 0.02,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500040033"
   },
   {
    "n": "Diclomec – Injeksion 75mg/3ml x10 amp.",
-   "cif": 2,
-   "disc": 0,
+   "cif": 2.0,
+   "disc": 0.0,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500100033"
   },
   {
    "n": "Rebone Plus – Tabl. 70mg+5600IU x4",
@@ -286,7 +314,8 @@
     "Rebone Plus 70 mg x 4 tab",
     "Rebone Plus 70mg x4 Tbl",
     "REBONE PLUS 4 TABLET"
-   ]
+   ],
+   "sap": "M100100500041403"
   },
   {
    "n": "Apranax Plus – Xhel (100mg+50mg)/g 50g",
@@ -297,110 +326,121 @@
     "Apranax Plus GEL 10+5% 50gr",
     "Apranax Plus 50g Gel",
     "APRANAX PLUS 50G. GEL"
-   ]
+   ],
+   "sap": "M100100500501405"
   },
   {
    "n": "Attex – Kaps. 10mg x28",
-   "cif": 12,
+   "cif": 12.0,
    "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 10 mg x 28 caps",
     "Attex 10mg x 28Cps"
-   ]
+   ],
+   "sap": "M100100500281521"
   },
   {
    "n": "Attex – Kaps. 18mg x28",
-   "cif": 17,
+   "cif": 17.0,
    "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 18mg x 28 caps",
     "Attex 18mg x 28Cps"
-   ]
+   ],
+   "sap": "M100100500281522"
   },
   {
    "n": "Attex – Kaps. 40mg x28",
-   "cif": 25,
+   "cif": 25.0,
    "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 40 mg x 28 caps",
     "Attex 40mg x 28Cps"
-   ]
+   ],
+   "sap": "M100100500281524"
   },
   {
    "n": "Attex – Kaps. 80mg x28",
-   "cif": 32,
+   "cif": 32.0,
    "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 80mg x 28Cps"
-   ]
+   ],
+   "sap": "M100100500281526"
   },
   {
    "n": "Ornisid – Film tabl. 250mg x20",
-   "cif": 8,
+   "cif": 8.0,
    "disc": 0.09,
    "rim": false,
    "al": [
     "Ornisid 250 mg x 20 tabs - Abdiibrahim",
     "Ornisid 250mg x20 Tbl",
     "ORNISID 250mg x 20f.c.tablets"
-   ]
+   ],
+   "sap": "M100100500200088"
   },
   {
    "n": "Ornisid – Tabl. vaginale 500mg x5",
    "cif": 8.33,
    "disc": 0.09,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500050092"
   },
   {
    "n": "Ornisid Fort – Film tabl. 500mg x10",
-   "cif": 8,
+   "cif": 8.0,
    "disc": 0.09,
    "rim": false,
    "al": [
     "Ornisid Fort 500 mg x 10 tabs - Abdiibrahim",
     "Ornisid Forte 500mg x10 Tbl"
-   ]
+   ],
+   "sap": "M100100500100089"
   },
   {
    "n": "Barca – Film tabl. çlirim të zgjatur 600mg x10",
-   "cif": 6,
-   "disc": 0,
+   "cif": 6.0,
+   "disc": 0.15,
    "rim": false,
    "al": [
     "Barca 600mg x10tb Etodolac",
     "Barca 600mg x10 Tbl",
     "BARCA SR 600 MG 10 F.TB"
-   ]
+   ],
+   "sap": "M100100500100781"
   },
   {
    "n": "Alyse – Kaps. 75mg x28",
-   "cif": 2.88,
+   "cif": 2.8848,
    "disc": 0.09,
    "rim": true,
    "al": [
     "Alyse 75mg x28cp Pregabaline",
     "Alyse 75mg x 28Cps"
-   ]
+   ],
+   "sap": "M100100500280795"
   },
   {
    "n": "Alyse – Kaps. 150mg x28",
-   "cif": 4.24,
+   "cif": 4.2448,
    "disc": 0.09,
    "rim": true,
    "al": [
     "Alyse150mg x28cp Pregabaline",
     "Alyse 150mg x28 Cps"
-   ]
+   ],
+   "sap": "M100100500280796"
   },
   {
    "n": "Alyse – Kaps. 150mg x56",
-   "cif": 8.49,
-   "disc": 0,
+   "cif": 8.4896,
+   "disc": 0.0,
    "rim": true,
    "al": []
   },
@@ -414,36 +454,40 @@
     "Rexapin 10mg x28tb-Olanzapine",
     "Rexapin 10mg x28 Tbl",
     "REXAPIN 10 MG 28 FILM COATED TABLE"
-   ]
+   ],
+   "sap": "M100200500280315"
   },
   {
    "n": "Fuarte Neo – Film tabl. 180mg x30",
-   "cif": 23,
-   "disc": 0,
+   "cif": 23.0,
+   "disc": 0.0,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500302084"
   },
   {
    "n": "Fuarte Neo – Film tabl. 360mg x30",
-   "cif": 42,
-   "disc": 0,
+   "cif": 42.0,
+   "disc": 0.1,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500302085"
   },
   {
    "n": "Apranax Plus – Film tabl. 550mg+30mg x20",
-   "cif": 4,
-   "disc": 0,
+   "cif": 4.0,
+   "disc": 0.0,
    "rim": true,
    "al": [
     "Apranax Plus 550mg+30mg x 20 tabs-Abdiibrahim",
     "Apranax Plus 550mg+30mg x20 Tbl",
     "APRANAX PLUS 20 F.TВ"
-   ]
+   ],
+   "sap": "M100100500200724"
   },
   {
    "n": "Stage – Film tabl. 10mg x28",
-   "cif": 4.57,
+   "cif": 3.886,
    "disc": 0.09,
    "rim": false,
    "al": [
@@ -451,18 +495,20 @@
     "Stage 10mg x 28tab",
     "Stage 10mg x 28 Tbl",
     "STAGE 10MG FILM TABLET (28 TABLET)"
-   ]
+   ],
+   "sap": "M100100500280672"
   },
   {
    "n": "Stage – Film tabl. 20mg x28",
-   "cif": 6.8,
+   "cif": 5.4052,
    "disc": 0.09,
    "rim": false,
    "al": [
     "Stage 20 mg x 28 tabs - Abdiibrahim",
     "Stage 20mg x 28 Tbl",
     "STAGE 20MG FILM TABLET (28 TABLET)"
-   ]
+   ],
+   "sap": "M100100500280673"
   },
   {
    "n": "Nexivol – Tabl. 5mg x28",
@@ -473,81 +519,89 @@
     "Nexivol 5 mg x 28 tabs - Abdiibrahim",
     "Nexivol 5mg x 28 Tbl",
     "NEXIVOL(Nebivolol)5mg x 28tabs R"
-   ]
+   ],
+   "sap": "M100100500280504"
   },
   {
    "n": "Citoles – Pika orale 10mg/ml 15ml",
    "cif": 5.5,
-   "disc": 0.09,
+   "disc": 0.0,
    "rim": false,
    "al": [
     "Citoles Oral Drops 10mg/ml 15ml-Abdiibrahim",
     "Citoles 10mg/ml x 15ml Pika",
     "CITOLES 10MG/MLORAL DROPS,SOLUTION (15ML)"
-   ]
+   ],
+   "sap": "M100100500150382"
   },
   {
    "n": "Fix-AT – Film tabl. 950mg x180",
-   "cif": 30,
-   "disc": 0,
+   "cif": 30.0,
+   "disc": 0.1,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100200501801139"
   },
   {
    "n": "Fix-AT – Film tabl. 950mg x90",
-   "cif": 15,
-   "disc": 0,
+   "cif": 15.0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   },
   {
    "n": "Tyoflex – Kaps. 8mg x14",
-   "cif": 7,
+   "cif": 7.0,
    "disc": 0.09,
    "rim": false,
    "al": [
     "Tyoflex 8 mg x 14 caps - Abdiibrahim",
     "Tyoflex 8mg x14 Cps",
     "TYOFLEX 8 MG 14 CAPSULES"
-   ]
+   ],
+   "sap": "M100100500140579"
   },
   {
    "n": "Tyoflex – Kaps. 8mg x10",
-   "cif": 5,
-   "disc": 0,
+   "cif": 5.0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   },
   {
    "n": "Fuarte – Tabl. dispersuese 125mg x28",
-   "cif": 21,
-   "disc": 0,
+   "cif": 21.0,
+   "disc": 0.12,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500281500"
   },
   {
    "n": "Fuarte – Tabl. dispersuese 250mg x28",
    "cif": 14.5,
-   "disc": 0,
+   "disc": 0.12,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500281501"
   },
   {
    "n": "Fuarte – Tabl. dispersuese 500mg x28",
-   "cif": 47,
-   "disc": 0,
+   "cif": 47.0,
+   "disc": 0.12,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500281502"
   },
   {
    "n": "Lameris – Film tabl. 800mg x180",
-   "cif": 15,
-   "disc": 0,
+   "cif": 15.0,
+   "disc": 0.12,
    "rim": true,
    "al": [
     "Lameris 800mg x180 Tbl",
     "LAMERIS 800MG FILM TABLET"
-   ]
+   ],
+   "sap": "M100100501801528"
   },
   {
    "n": "Tarden – Film tabl. 20mg x30",
@@ -558,25 +612,28 @@
     "Tarden 20 mg x 30 tabs - Abdiibrahim",
     "Tarden 20mg x 30 Tbl",
     "TARDEN(Atorvastatin)20mg x 30tabs R"
-   ]
+   ],
+   "sap": "M100100500300113"
   },
   {
    "n": "OnceAir – Film tabl. 10mg x28",
-   "cif": 6.16,
+   "cif": 6.1617,
    "disc": 0.09,
    "rim": false,
    "al": [
     "OnceAir 10 mg x 28 tabs - Abdiibrahim"
-   ]
+   ],
+   "sap": "M100200500280331"
   },
   {
    "n": "OnceAir – Tabl. për t'u përtypur 5mg x28",
-   "cif": 6.66,
+   "cif": 6.6595,
    "disc": 0.09,
    "rim": false,
    "al": [
     "OnceAir 5 mg x 28 tabs - Abdiibrahim"
-   ]
+   ],
+   "sap": "M100200500280330"
   },
   {
    "n": "OnceAir – Tabl. për t'u përtypur 4mg x28",
@@ -586,7 +643,8 @@
    "al": [
     "OnceAir 4 mg x 28 tabs - Abdiibrahim",
     "Onceair Chewable 4mg x 28 Tbl"
-   ]
+   ],
+   "sap": "M100200500280329"
   },
   {
    "n": "OnceAir – Granula pediatrike 4mg x28 qeskë",
@@ -596,7 +654,8 @@
    "al": [
     "ONCEAIR Pediatric 4mg x 28 bustina - Abdiibrahim",
     "Onceair Pediatric Oral Gran 4mg x 28 Bus"
-   ]
+   ],
+   "sap": "M100100500280712"
   },
   {
    "n": "Protonex – Tabl. gastrorez. 40mg x28",
@@ -608,16 +667,18 @@
     "Protonex 40mg x 28 tab",
     "Protonex 40mg x 28 Tbl",
     "PROTONEX(Pantoprazole)40mg x 28 coated tabs"
-   ]
+   ],
+   "sap": "M100100500280337"
   },
   {
    "n": "Attex – Tretësirë orale 4mg/ml 100ml",
-   "cif": 28,
-   "disc": 0,
+   "cif": 28.0,
+   "disc": 0.1,
    "rim": true,
    "al": [
     "Attex 4mg/ml x 100ml Oral Sol"
-   ]
+   ],
+   "sap": "M100100501002211"
   },
   {
    "n": "Ecopirin PRO – Tabl. gastrorez. 81mg x30",
@@ -628,24 +689,27 @@
     "Ecopirin Pro 81 mg x 30 tabs - Abdiibrahim",
     "Ecopirin PRO 81mg x30 Tbl",
     "ECOPIRIN PRO**81mgx30coated tabls(I)R"
-   ]
+   ],
+   "sap": "M100100500301489"
   },
   {
    "n": "Muconex-C – Tabl. shkumëzuese 600mg+200mg x30",
-   "cif": 5,
-   "disc": 0,
+   "cif": 5.0,
+   "disc": 0.1,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500301420"
   },
   {
    "n": "Muconex – Tabl. shkumëzuese 900mg x20",
    "cif": 3.7,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
    "al": [
     "Muconex 900mg x20tab eff",
     "Muconex Eff 900mg  x20 Tbl"
-   ]
+   ],
+   "sap": "M100100500201419"
   },
   {
    "n": "Coriva – Kaps. inhalim 18mcg x30 + inhalator",
@@ -657,7 +721,8 @@
     "Coriva 18mcg INH * 30Cps + 1 pompe",
     "Coriva 18mcg INH x30Cps+1Pompe",
     "CORIVA 18MCG CAPSULE POWDER INHALATION (30 CAPS)"
-   ]
+   ],
+   "sap": "M100100500302282"
   },
   {
    "n": "Tanflex – Spraj oral 0.15% 30ml",
@@ -669,45 +734,51 @@
     "Tanflex Oral Spray 30ml",
     "Tanflex  0.15% x30ml Spray",
     "TANFLEX %0,15 ORAL SPRAY"
-   ]
+   ],
+   "sap": "M100100500300111"
   },
   {
    "n": "Tanflex – Tretësirë gargarë 0.15% 120ml",
    "cif": 2.5,
-   "disc": 0,
+   "disc": 0.1,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100501200110"
   },
   {
    "n": "Galviks Advance – Suspension oral (1000mg+200mg)/10ml 200ml",
-   "cif": 5,
+   "cif": 5.0,
    "disc": 0.1,
    "rim": false,
    "al": [
     "Galviks Advance 1000mg+200mg/10ml x 200ml-Abdiibrahim",
     "Galviks Advance 1000mg+200mg/10ml x 200ml Syr"
-   ]
+   ],
+   "sap": "M100100502001820"
   },
   {
    "n": "Gelgo – Xhel 1%+5% 50g",
-   "cif": 4,
+   "cif": 4.0,
    "disc": 0.08,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100200500501519"
   },
   {
    "n": "Livagy – Ovula vaginale 750mg+200mg+100mg x7",
-   "cif": 6,
+   "cif": 6.0,
    "disc": 0.09,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100200500071408"
   },
   {
    "n": "Tanflex Fort – Spraj oral 0.3% 15ml",
    "cif": 3.24,
    "disc": 0.1,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500151679"
   },
   {
    "n": "Tanflex Fort – Spraj oral 0.3% 30ml",
@@ -719,7 +790,8 @@
     "Tanflex Fort x 2 Oral Spray  30ml 0.3% Benzydamine",
     "Tanflex Forte Oral  x30ml Spray",
     "TANFLEX FORT 0.3% x 1 bottle 30ml"
-   ]
+   ],
+   "sap": "M100100500301679"
   },
   {
    "n": "Tensart – Tabl. 16mg x28",
@@ -730,7 +802,8 @@
     "Tensart 16 mg x 28 tabs - Abdiibrahim",
     "Tensart 16mg x 28 Tbl",
     "TENSART 16MG  28 TABLET"
-   ]
+   ],
+   "sap": "M100100500280122"
   },
   {
    "n": "Tensart – Tabl. 32mg x28",
@@ -741,7 +814,8 @@
     "Tensart 32mg x 28tab AbdiIbrahim",
     "Tensart 32mg x 28Tbl",
     "TENSART 32MG  28 TABLET"
-   ]
+   ],
+   "sap": "M100100500281722"
   },
   {
    "n": "Tensart Plus – Tabl. 16mg+12.5mg x28",
@@ -752,7 +826,8 @@
     "Tensart Plus 16mg/12.5mg x 28 tab AbdiIbrahim",
     "Tensart Plus 16mg +12.5mg x 28Tbl",
     "TENSART PLUS 16MG +12.5MG  28 TABLET"
-   ]
+   ],
+   "sap": "M100100500280332"
   },
   {
    "n": "Tensart Plus – Tabl. 32mg+12.5mg x28",
@@ -763,7 +838,8 @@
     "Tensart Plus 32mg + 12.5mg * 28 tab",
     "Tensart Plus 32mg +12.5mg x 28Tbl",
     "TENSART PLUS 32MG +12.5MG  28 TABLET"
-   ]
+   ],
+   "sap": "M100100500281723"
   },
   {
    "n": "Apranax Fort – Film tabl. 550mg x10",
@@ -773,14 +849,16 @@
    "al": [
     "Apranax Fort 550mg x 10 Tbl",
     "APRANAX FORT 550MG 10 FILM COATED TABLEТ"
-   ]
+   ],
+   "sap": "M100100500100006"
   },
   {
    "n": "Apranax Fort – Film tabl. 550mg x20",
    "cif": 2.05,
    "disc": 0.1,
    "rim": false,
-   "al": []
+   "al": [],
+   "sap": "M100100500200006"
   },
   {
    "n": "Tenoviral – Film tabl. 245mg x30",
@@ -791,7 +869,8 @@
     "Tenoviral 245 mg x 30 tabs - Abdiibrahim",
     "Tenoviral 245mg x 30Tbl",
     "TENOVIRAL 245 MG 30 F.TB"
-   ]
+   ],
+   "sap": "M100100500300854"
   },
   {
    "n": "Moxai – Film tabl. 400mg x7",
@@ -802,38 +881,42 @@
     "Moxai 400 mg x 7 tabs - Abdiibrahim",
     "Moxai 400mg x7 Tbl",
     "MOXAI 400 MG7-FILM TABLETS"
-   ]
+   ],
+   "sap": "M100100500070634"
   },
   {
    "n": "Brequal – Kaps. inhalim 50µg+100µg x60 + Qhaler",
    "cif": 3.95,
-   "disc": 0,
+   "disc": 0.08,
    "rim": true,
-   "al": []
+   "al": [],
+   "sap": "M100100500601066"
   },
   {
    "n": "Brequal – Kaps. inhalim 50µg+250µg x60 + Qhaler",
    "cif": 4.35,
-   "disc": 0,
+   "disc": 0.352,
    "rim": true,
    "al": [
     "Brequal 50/250mcg x 60Cps+1Pompe"
-   ]
+   ],
+   "sap": "M100100500601067"
   },
   {
    "n": "Brequal – Kaps. inhalim 50µg+500µg x60 + Qhaler",
    "cif": 5.2,
-   "disc": 0,
+   "disc": 0.35,
    "rim": true,
    "al": [
     "Brequal 50mcg/500mcg x 60cap",
     "Brequal 50/500mcg x60Cps+1Pompe"
-   ]
+   ],
+   "sap": "M100100500601068"
   },
   {
    "n": "Diamond – Film tabl. 62.5mg x56",
-   "cif": 250,
-   "disc": 0,
+   "cif": 250.0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   },
@@ -846,12 +929,13 @@
     "Rebone 70 mg + 2800 I.U x 4 tabs -Abdiibrahim",
     "Rebone 70mg x 4Tbl",
     "REBONE 70MG /2800 I TABLETS (4 TABLE TABLETS)"
-   ]
+   ],
+   "sap": "M100100500041402"
   },
   {
    "n": "Diamond – Film tabl. 125mg x56",
-   "cif": 250,
-   "disc": 0,
+   "cif": 250.0,
+   "disc": 0.0,
    "rim": false,
    "al": []
   }
