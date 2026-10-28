@@ -543,7 +543,7 @@
    "n": "Lameris – Film tabl. 800mg x180",
    "cif": 15,
    "disc": 0,
-   "rim": false,
+   "rim": true,
    "al": [
     "Lameris 800mg x180 Tbl",
     "LAMERIS 800MG FILM TABLET"
