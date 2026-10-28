@@ -156,7 +156,6 @@ tr.excl td{color:var(--muted)}
   <div class="kpi main"><div class="l">Totali për kompensim</div><div class="v" id="kTotal">–</div></div>
   <div class="kpi"><div class="l">Produkte që kompensohen</div><div class="v" id="kCount">–</div></div>
   <div class="kpi"><div class="l">Nuk kompensohen</div><div class="v" id="kSkip">–</div></div>
-  <div class="kpi"><div class="l">Jashtë listës (pa CIF)</div><div class="v" id="kOut">–</div></div>
  </div>
  <div id="calcMsg"></div>
 
@@ -194,12 +193,6 @@ tr.excl td{color:var(--muted)}
   <div class="tbl"><table id="calcTbl"></table></div>
   <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Produktet me skonto 0 nuk kompensohen. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
  </div>
- <div class="card" id="outCard" style="display:none">
-  <h2>Produkte në shitje, por jashtë listës së kompensimit</h2>
-  <p class="note">Nuk kompensohen derisa Abdi Ibrahim t'i shtojë me CIF dhe nr. fature.</p>
-  <div class="tbl"><table id="outTbl"></table></div>
- </div>
- <div class="print-only" id="printSign" style="margin-top:24px"></div>
 </section>
 
 <!-- SHITJET -->
@@ -577,7 +570,6 @@ function renderCalc(){
   $('kTotal').textContent = has ? '€ '+fmt(res.total) : '–';
   $('kCount').textContent = has ? res.rows.filter(r=>r.status==='ok').length : '–';
   $('kSkip').textContent = has ? res.rows.filter(r=>r.status!=='ok'&&r.status!=='nosale').length : '–';
-  $('kOut').textContent = has ? res.outside.length : '–';
   msg('calcMsg','warn', has ? '' : 'Nuk ka shitje. Shko te <b>Shitjet</b> për t\'i ngarkuar.');
   const H = ['Produkti','CIF Gross €','Zbr. fat.','CIF Net €','Rimb.','Çmimi pa skonto LEK','Sasia neto','Çmimi WS €','Zbr. mes.','WS Net €','Fitimi/kuti €','%','Fitim/Humbje €','15%/kuti €','15% Fitim vlerë €','Për kompensim €','Statusi'];
   let h = '<thead><tr>'+H.map((x,i)=>`<th${i===16?' class="l"':''}>${x}</th>`).join('')+'</tr></thead><tbody>';
@@ -593,9 +585,6 @@ function renderCalc(){
   const okR = res.rows.filter(r=>r.status==='ok'), sum = k => okR.reduce((a,r)=>a+(r[k]||0),0);
   h += `</tbody><tfoot><tr><td>TOTALI</td><td colspan="5"></td><td>${fmt(res.rows.reduce((a,r)=>a+(r.qtyNet||0),0),0)}</td><td colspan="5"></td><td${cls(sum('pl'))}>${fmt(sum('pl'))}</td><td></td><td>${fmt(sum('p15val'))}</td><td${cls(res.total)}>${fmt(res.total)}</td><td></td></tr></tfoot>`;
   $('calcTbl').innerHTML = h;
-  $('outCard').style.display = res.outside.length ? '' : 'none';
-  $('outTbl').innerHTML = '<thead><tr><th>Produkti</th><th>Sasia neto</th><th>Vlera bruto LEK neto</th><th>Zbritja LEK neto</th></tr></thead><tbody>' +
-    res.outside.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.qtyNet}</td><td>${fmt(s.grossNet)}</td><td>${fmt(s.discNet)}</td></tr>`).join('')+'</tbody>';
   $('btnSave').disabled = !has;
   renderBanner();
 }
@@ -639,7 +628,6 @@ function buildWorkbook(meta){
   const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(data);
   ws['!cols']=[{wch:48},...H.slice(1).map(()=>({wch:13}))];
   XLSX.utils.book_append_sheet(wb,ws,'Kompensimi');
-  if(res.outside.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Produkti','Sasia neto','Vlera bruto LEK neto','Zbritja LEK neto'],...res.outside.map(s=>[s.name,s.qtyNet,s.grossNet,s.discNet])]),'Jashtë listës');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Produkti','Nr. rreshtash','Sasia neto (me kthime)','Sasia e shitur (pa kthime)','Vlera bruto LEK (pa kthime)','Vlera bruto LEK neto','Zbritja LEK neto','Çmimi pa skonto LEK'],...ST.sales.map(s=>[s.name,s.lines,s.qtyNet,s.qtySold,s.grossSold,s.grossNet,s.discNet,s.qtySold?rnd(s.grossSold/s.qtySold,2):null])]),'Shitjet');
   const json=JSON.stringify({...meta, rates:ST.rates, sales:ST.sales, salesSrc:ST.salesSrc});
   const chunks=[]; for(let i=0;i<json.length;i+=30000) chunks.push([json.slice(i,i+30000)]);
@@ -699,7 +687,7 @@ $('btnClose').onclick=()=>{ Object.assign(ST,{mode:'prep',file:null,sales:[],sal
 function setSales(rows, src, note){
   ST.sales=rows; ST.salesSrc=src; ST.salesNote=note||''; ST.savedOnce=false; renderAll();
   if(!rows.length){ msg('salesMsg','',''); return; }
-  msg('salesMsg','ok',`${note?esc(note)+'<br>':''}U lexuan ${rows.length} produkte${LAST.outside.length?` (${LAST.outside.length} jashtë listës)`:''}. Vazhdo te <span class="link" onclick="showTab('t-xc')">Cross-check</span> ose shiko <span class="link" onclick="showTab('t-calc')">Llogaritjen</span> (€ ${fmt(LAST.total)}).`);
+  msg('salesMsg','ok',`${note?esc(note)+'<br>':''}U lexuan ${rows.length} produkte. Vazhdo te <span class="link" onclick="showTab('t-xc')">Cross-check</span> ose shiko <span class="link" onclick="showTab('t-calc')">Llogaritjen</span> (€ ${fmt(LAST.total)}).`);
 }
 function handleSheets(sheets, src){
   if(!ST.dist){ msg('salesMsg','err','Zgjidh fillimisht distributorin tënd lart djathtas, pastaj ngarko raportin.'); $('dist').focus(); return; }
@@ -742,8 +730,8 @@ function renderSales(){
   $('salesSrc').textContent = ST.salesSrc ? '· '+ST.salesSrc : '';
   if(!ST.sales.length){ $('salesTbl').innerHTML='<tbody><tr><td class="l note">Nuk ka shitje të ngarkuara.</td></tr></tbody>'; return; }
   const names=new Set(products().map(p=>norm(p.n)));
-  $('salesTbl').innerHTML='<thead><tr><th>Produkti</th><th>Rreshta</th><th>Sasia neto</th><th>Sasia e shitur</th><th>Vlera bruto LEK (pa kthime)</th><th>Vlera bruto LEK neto</th><th>Zbritja LEK neto</th><th>Çmimi pa skonto</th><th></th></tr></thead><tbody>'+
-    ST.sales.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.lines??''}</td><td${cls(s.qtyNet)}>${s.qtyNet}</td><td>${s.qtySold}</td><td>${fmt(s.grossSold)}</td><td${cls(s.grossNet)}>${fmt(s.grossNet)}</td><td>${fmt(s.discNet)}</td><td>${s.qtySold?fmt(s.grossSold/s.qtySold):''}</td><td class="l">${names.has(norm(s.name))?'':'<span class="pill p-info">Jashtë listës</span>'}</td></tr>`).join('')+'</tbody>';
+  $('salesTbl').innerHTML='<thead><tr><th>Produkti</th><th>Rreshta</th><th>Sasia neto</th><th>Sasia e shitur</th><th>Vlera bruto LEK (pa kthime)</th><th>Vlera bruto LEK neto</th><th>Zbritja LEK neto</th><th>Çmimi pa skonto</th></tr></thead><tbody>'+
+    ST.sales.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.lines??''}</td><td${cls(s.qtyNet)}>${s.qtyNet}</td><td>${s.qtySold}</td><td>${fmt(s.grossSold)}</td><td${cls(s.grossNet)}>${fmt(s.grossNet)}</td><td>${fmt(s.discNet)}</td><td>${s.qtySold?fmt(s.grossSold/s.qtySold):''}</td></tr>`).join('')+'</tbody>';
 }
 
 /* ===== Kontrolli ===== */
@@ -773,7 +761,6 @@ function renderCheck(){
       (prev?`<td>${p?fmt(p.wsLek):''}</td><td${cls(dP)}>${dP!=null&&Math.abs(dP)>0.005?(dP>0?'+':'')+fmt(dP):''}</td><td>${p?.qtyNet??''}</td><td${cls(dQ)}>${dQ!=null?(dQ>0?'+':'')+Math.round(dQ*100)+'%':''}</td><td>${p?pct(p.avgDisc):''}</td>`:'')+
       `<td class="l">${notes.map(([c,t])=>`<span class="pill ${c}">${t}</span>`).join(' ')}</td></tr>`;
   }
-  for(const s of now.outside){ n++; h+=`<tr><td>${esc(s.name)}</td><td>${fmt(s.qtySold?s.grossSold/s.qtySold:null)}</td><td>${s.qtyNet}</td><td></td>${prev?'<td></td><td></td><td></td><td></td><td></td>':''}<td class="l"><span class="pill p-info">Jashtë listës – pa CIF</span></td></tr>`; }
   $('checkTbl').innerHTML=h+'</tbody>';
   $('checkSummary').innerHTML = !ST.sales.length ? '<div class="msg warn">Ngarko shitjet fillimisht.</div>' :
     `<div class="msg ${n?'warn':'ok'}">${n?`${n} produkte kanë vërejtje.`:'Asnjë vërejtje.'}${prev?` Totali: € ${fmt(prev.total)} → € ${fmt(now.total)}.`:''}</div>`;
