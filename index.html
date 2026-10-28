@@ -247,16 +247,14 @@ tr.excl td{color:var(--muted)}
   <div class="row" style="justify-content:space-between">
    <h2 style="margin:0">Lista e produkteve dhe CIF</h2>
    <div class="row noprint">
+    <button class="pri" id="btnPublish" disabled>Publiko ndryshimet</button>
+    <button id="btnDiscard" disabled>Anulo ndryshimet</button>
     <button id="btnAdmin">Hyr si admin</button>
-    <span id="adminBar" style="display:none" class="row">
-     <span class="pill p-ok" id="adminWho"></span>
-     <button class="pri" id="btnPublish" disabled>Publiko ndryshimet</button>
-     <button id="btnDiscard" disabled>Anulo ndryshimet</button>
-     <button id="btnLogout">Dil</button>
-    </span>
+    <span class="pill p-ok" id="adminWho" style="display:none"></span>
+    <button id="btnLogout" style="display:none">Dil</button>
    </div>
   </div>
-  <p class="note">Burimi i CIF: <span id="cifSrc"></span>. Zbritja e faturës dhe rimbursimi vendosen nga Abdi Ibrahim. Kolona "Emri në shitje" tregon si lidhet produkti me raportet e distributorëve.</p>
+  <p class="note">Burimi i CIF: <span id="cifSrc"></span>. CIF Gross, zbritja e faturës dhe rimbursimi mund të ndryshohen direkt në tabelë. Kolona "Emri në shitje" tregon si lidhet produkti me raportet e distributorëve.</p>
   <div id="adminMsg"></div>
   <div id="adminLogin" class="card" style="display:none;background:#f9fafb">
    <h2>Hyrja e adminit</h2>
@@ -780,41 +778,44 @@ function renderCheck(){
 /* ===== Produktet ===== */
 function renderProd(){
   $('cifSrc').textContent = CIF_SOURCE + (CIF_UPDATED ? ` · ndryshuar nga admini më ${CIF_UPDATED}` : '');
-  const ed = ADMIN.on;
-  const changed = p => { const o=ADMIN.orig.get(p.n); return o && (o.cif!==p.cif || o.disc!==p.disc); };
-  $('prodTbl').innerHTML='<thead><tr><th>Produkti (AKBPM)</th><th>CIF Gross €</th><th>Zbritja e faturës %</th><th>CIF Net €</th><th>Me rimbursim (kursi)</th><th class="l">Emri në shitje</th></tr></thead><tbody>'+
-    products().map((p,i)=>`<tr${ed&&changed(p)?' style="background:#fff8e6"':''}><td>${esc(p.n)}</td>
-      <td>${ed?`<input type="number" step="0.01" min="0" data-i="${i}" data-k="cif" value="${p.cif}" style="width:90px">`:fmt(p.cif)}</td>
-      <td>${ed?`<input type="number" step="0.1" min="0" max="100" data-i="${i}" data-k="disc" value="${+(p.disc*100).toFixed(2)}" style="width:80px">`:pct(p.disc)}</td>
-      <td>${fmt(p.cif*(1-p.disc))}</td><td>${p.rim?'Po ('+ST.rates.r+')':'Jo ('+ST.rates.n+')'}</td>
+  const changed = p => { const o=ADMIN.orig.get(p.n); return o && (o.cif!==p.cif || o.disc!==p.disc || o.rim!==p.rim); };
+  $('prodTbl').innerHTML='<thead><tr><th>Produkti (AKBPM)</th><th>CIF Gross €</th><th>Zbritja e faturës %</th><th>CIF Net €</th><th>Me rimbursim</th><th>Kursi</th><th class="l">Emri në shitje</th></tr></thead><tbody>'+
+    products().map((p,i)=>`<tr${changed(p)?' style="background:#fff8e6"':''}><td>${esc(p.n)}</td>
+      <td><input type="number" step="0.01" min="0" data-i="${i}" data-k="cif" value="${p.cif}" style="width:90px"></td>
+      <td><input type="number" step="0.1" min="0" max="100" data-i="${i}" data-k="disc" value="${+(p.disc*100).toFixed(2)}" style="width:80px"></td>
+      <td>${fmt(p.cif*(1-p.disc))}</td>
+      <td style="text-align:center"><input type="checkbox" data-i="${i}" data-k="rim" ${p.rim?'checked':''}></td><td>${p.rim?ST.rates.r:ST.rates.n}</td>
       <td class="l">${(p.al||[]).map(esc).join('<br>')||'<span class="note">– pa lidhje ende –</span>'}</td></tr>`).join('')+'</tbody>';
-  if(ed) $('prodTbl').querySelectorAll('input[data-k]').forEach(inp=>inp.onchange=()=>{
-    const p=PRODUCT_LIST[+inp.dataset.i], v=+inp.value;
-    if(!isFinite(v)||v<0){ inp.value = inp.dataset.k==='cif'?p.cif:p.disc*100; return; }
-    if(inp.dataset.k==='cif') p.cif=Math.round(v*10000)/10000; else p.disc=Math.min(v,100)/100;
-    renderAdmin(); renderCalc(); renderProd();
+  $('prodTbl').querySelectorAll('input[data-k]').forEach(inp=>inp.onchange=()=>{
+    const p=PRODUCT_LIST[+inp.dataset.i], k=inp.dataset.k;
+    if(k==='rim'){ p.rim=inp.checked; }
+    else { const v=+inp.value; if(inp.value===''||!isFinite(v)||v<0){ inp.value = k==='cif'?p.cif:p.disc*100; return; }
+      if(k==='cif') p.cif=Math.round(v*10000)/10000; else p.disc=Math.min(v,100)/100; }
+    renderAdmin(); renderAll();
   });
 }
 
-/* ===== Admin: ndryshon CIF/zbritjen dhe i publikon në GitHub ===== */
-const ADMIN = { on:false, token:'', login:'', sha:'', orig:new Map() };
+/* ===== Ndryshimet e CIF / zbritjes / rimbursimit dhe publikimi në GitHub ===== */
+const ADMIN = { on:false, token:'', login:'', sha:'', orig:new Map(), pendingPublish:false };
+const snap = () => new Map(PRODUCT_LIST.map(p=>[p.n,{cif:p.cif,disc:p.disc,rim:!!p.rim}]));
+ADMIN.orig = snap();
 const GH = (path, opt={}) => fetch(`https://api.github.com/repos/${REPO.owner}/${REPO.repo}${path}`, {...opt, headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+ADMIN.token, ...(opt.headers||{})}});
 const b64 = s => btoa(unescape(encodeURIComponent(s)));
 const ub64 = s => decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
-function diffList(){ return products().filter(p=>{ const o=ADMIN.orig.get(p.n); return o && (o.cif!==p.cif||o.disc!==p.disc); }).map(p=>({p,o:ADMIN.orig.get(p.n)})); }
+function diffList(){ return products().filter(p=>{ const o=ADMIN.orig.get(p.n); return o && (o.cif!==p.cif||o.disc!==p.disc||o.rim!==!!p.rim); }).map(p=>({p,o:ADMIN.orig.get(p.n)})); }
+const descDiff = ({p,o}) => [o.cif!==p.cif?`CIF ${fmt(o.cif)} → ${fmt(p.cif)}`:'', o.disc!==p.disc?`zbritja ${pct(o.disc)} → ${pct(p.disc)}`:'', o.rim!==!!p.rim?`rimbursim ${o.rim?'Po':'Jo'} → ${p.rim?'Po':'Jo'}`:''].filter(Boolean).join(', ');
 function renderAdmin(){
+  const d = diffList();
   $('btnAdmin').style.display = ADMIN.on ? 'none' : '';
-  $('adminBar').style.display = ADMIN.on ? '' : 'none';
+  $('adminWho').style.display = $('btnLogout').style.display = ADMIN.on ? '' : 'none';
   $('adminWho').textContent = 'Admin: '+ADMIN.login;
-  const d = ADMIN.on ? diffList() : [];
   $('btnPublish').disabled = $('btnDiscard').disabled = !d.length;
-  msg('adminMsg', d.length?'warn':'info', !ADMIN.on ? '' : d.length ?
-    `${d.length} ndryshime të papublikuara: ` + d.map(({p,o})=>`<b>${esc(p.n)}</b> ${o.cif!==p.cif?`CIF ${fmt(o.cif)} → ${fmt(p.cif)}`:''}${o.cif!==p.cif&&o.disc!==p.disc?', ':''}${o.disc!==p.disc?`zbritja ${pct(o.disc)} → ${pct(p.disc)}`:''}`).join(' · ') +
-    '<br>Ndryshimet shihen vetëm këtu derisa të klikosh "Publiko ndryshimet".' :
-    'Je në modalitetin admin. Ndrysho CIF-in ose zbritjen në tabelë, pastaj kliko "Publiko ndryshimet".');
+  msg('adminMsg', d.length?'warn':'', d.length ?
+    `${d.length} ndryshime: ` + d.map(x=>`<b>${esc(x.p.n)}</b> ${descDiff(x)}`).join(' · ') +
+    '<br>Llogaritja dhe Cross-check i përdorin menjëherë. Që të mbeten edhe kur rihap faqen, kliko "Publiko ndryshimet".' : '');
 }
 $('btnAdmin').onclick=()=>{ $('adminLogin').style.display=''; $('ghToken').focus(); };
-$('btnLoginCancel').onclick=()=>{ $('adminLogin').style.display='none'; $('ghToken').value=''; };
+$('btnLoginCancel').onclick=()=>{ $('adminLogin').style.display='none'; $('ghToken').value=''; ADMIN.pendingPublish=false; };
 $('btnLogin').onclick=async()=>{
   const tok=$('ghToken').value.trim(); if(!tok) return;
   ADMIN.token=tok; $('btnLogin').disabled=true;
@@ -823,39 +824,43 @@ $('btnLogin').onclick=async()=>{
     const repo=await r.json(); if(!repo.permissions?.push) throw new Error('Token-i nuk ka leje shkrimi (Contents: Read and write).');
     const f=await GH(`/contents/${REPO.path}?ref=${REPO.branch}`); if(!f.ok) throw new Error('Nuk u lexua produktet.json nga GitHub.');
     const fj=await f.json(); ADMIN.sha=fj.sha;
-    applyData(JSON.parse(ub64(fj.content)));
-    ADMIN.login = repo.owner?.login || 'admin';
-    ADMIN.on=true; ADMIN.orig=new Map(PRODUCT_LIST.map(p=>[p.n,{cif:p.cif,disc:p.disc}]));
+    if(!diffList().length){ applyData(JSON.parse(ub64(fj.content))); ADMIN.orig=snap(); }
+    ADMIN.login = repo.owner?.login || 'admin'; ADMIN.on=true;
     $('adminLogin').style.display='none'; $('ghToken').value='';
     renderAll(); renderAdmin();
+    if(ADMIN.pendingPublish){ ADMIN.pendingPublish=false; publish(); }
   }catch(e){ ADMIN.token=''; msg('adminMsg','err',esc(e.message)); }
   finally{ $('btnLogin').disabled=false; }
 };
-$('btnDiscard').onclick=()=>{ for(const p of PRODUCT_LIST){ const o=ADMIN.orig.get(p.n); if(o){ p.cif=o.cif; p.disc=o.disc; } } renderAll(); renderAdmin(); };
-$('btnLogout').onclick=()=>{ if(diffList().length && !confirm('Ke ndryshime të papublikuara. Të dalësh pa i publikuar?')) return; $('btnDiscard').onclick(); ADMIN.on=false; ADMIN.token=''; renderAll(); renderAdmin(); };
-$('btnPublish').onclick=async()=>{
+$('btnDiscard').onclick=()=>{ for(const p of PRODUCT_LIST){ const o=ADMIN.orig.get(p.n); if(o){ p.cif=o.cif; p.disc=o.disc; p.rim=o.rim; } } renderAll(); renderAdmin(); };
+$('btnLogout').onclick=()=>{ ADMIN.on=false; ADMIN.token=''; renderAdmin(); };
+$('btnPublish').onclick=()=>{
+  if(!diffList().length) return;
+  if(!ADMIN.on){ ADMIN.pendingPublish=true; $('adminLogin').style.display=''; $('ghToken').focus(); msg('adminMsg','info','Për të publikuar, hyr si admin me token-in e GitHub. Ndryshimet e tua mbeten.'); return; }
+  publish();
+};
+async function publish(){
   const d=diffList(); if(!d.length) return;
-  if(!confirm(`Të publikohen ${d.length} ndryshime? Do të vlejnë për të gjithë distributorët sapo të rifreskojnë faqen.`)) return;
+  if(!confirm(`Të publikohen ${d.length} ndryshime? Do të vlejnë sa herë hapet faqja.`)) return;
   $('btnPublish').disabled=true;
   try{
     const today=new Date().toISOString().slice(0,10);
     const body={ source:CIF_SOURCE, updated:today, products:PRODUCT_LIST };
-    const msgTxt='CIF/zbritje: '+d.map(({p,o})=>`${p.n.split(' – ')[0]} ${o.cif!==p.cif?o.cif+'→'+p.cif:''}${o.disc!==p.disc?' zbr '+(o.disc*100)+'%→'+(p.disc*100)+'%':''}`).join('; ').slice(0,300);
+    const msgTxt=('Produktet: '+d.map(x=>`${x.p.n.split(' – ')[0]} ${descDiff(x).replace(/<[^>]+>/g,'')}`).join('; ')).slice(0,300);
     const r=await GH(`/contents/${REPO.path}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msgTxt,content:b64(JSON.stringify(body,null,1)),sha:ADMIN.sha,branch:REPO.branch})});
-    if(r.status===409) throw new Error('Lista u ndryshua diku tjetër ndërkohë. Dil, hyr përsëri dhe bëji ndryshimet nga e para.');
+    if(r.status===409) throw new Error('Lista u ndryshua diku tjetër ndërkohë. Rifresko faqen dhe bëji ndryshimet përsëri.');
     if(!r.ok) throw new Error('GitHub ktheu gabim '+r.status+'.');
-    const j=await r.json(); ADMIN.sha=j.content.sha; CIF_UPDATED=today;
-    ADMIN.orig=new Map(PRODUCT_LIST.map(p=>[p.n,{cif:p.cif,disc:p.disc}]));
+    const j=await r.json(); ADMIN.sha=j.content.sha; CIF_UPDATED=today; ADMIN.orig=snap();
     renderAll(); renderAdmin();
-    msg('adminMsg','ok',`U publikuan ${d.length} ndryshime. Distributorët i shohin pas 1–2 minutash, kur të rifreskojnë faqen.`);
+    msg('adminMsg','ok',`U publikuan ${d.length} ndryshime. Do të shihen pas 1–2 minutash, kur të rifreskohet faqja.`);
   }catch(e){ msg('adminMsg','err','Publikimi dështoi: '+esc(e.message)); $('btnPublish').disabled=false; }
-};
+}
 function applyData(j){
   if(!j || !Array.isArray(j.products) || !j.products.length) return false;
   PRODUCT_LIST=j.products; if(j.source) CIF_SOURCE=j.source; CIF_UPDATED=j.updated||''; return true;
 }
 async function loadOfficialList(){
-  try{ const r=await fetch(REPO.path+'?t='+Date.now(),{cache:'no-store'}); if(r.ok && applyData(await r.json()) && !ADMIN.on) renderAll(); }catch(e){}
+  try{ const r=await fetch(REPO.path+'?t='+Date.now(),{cache:'no-store'}); if(r.ok && !diffList().length && applyData(await r.json())){ ADMIN.orig=snap(); renderAll(); renderAdmin(); } }catch(e){}
 }
 
 
@@ -910,7 +915,7 @@ $('xcExport').onclick=()=>{
 };
 
 function renderAll(){ renderCalc(); renderSales(); renderProd(); renderXC(); if($('t-check').classList.contains('on')) renderCheck(); }
-syncHeader(); renderAll(); loadOfficialList();
+syncHeader(); renderAll(); renderAdmin(); loadOfficialList();
 </script>
 </body>
 </html>
