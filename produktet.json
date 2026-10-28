@@ -281,7 +281,7 @@
    "n": "Rebone Plus – Tabl. 70mg+5600IU x4",
    "cif": 3.5566,
    "disc": 0.1,
-   "rim": false,
+   "rim": true,
    "al": [
     "Rebone Plus 70 mg x 4 tab",
     "Rebone Plus 70mg x4 Tbl",
