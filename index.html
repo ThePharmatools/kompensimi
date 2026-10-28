@@ -164,7 +164,7 @@ tr.excl td{color:var(--muted)}
  <div class="card">
   <h2>Llogaritja për produkt</h2>
   <div class="tbl"><table id="calcTbl"></table></div>
-  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Nuk kompensohen produktet me zbritje mesatare 0–2%. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
+  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
  </div>
  <div class="card" id="outCard" style="display:none">
   <h2>Produkte në shitje, por jashtë listës së kompensimit</h2>
@@ -241,7 +241,7 @@ tr.excl td{color:var(--muted)}
 
 <script id="core">
 /* ===== Llogaritja (pa DOM) ===== */
-const MIN_DISC = 0.02; /* zbritja mesatare deri në 2% (përfshirë 0) nuk kompensohet */
+const MIN_DISC = null; /* rregulli i zbritjes minimale është hequr përkohësisht; vendos p.sh. 0.02 për ta rikthyer */
 const norm = s => String(s ?? '').trim().replace(/\s+/g,' ').toLowerCase();
 
 function calcRow(p, s, rates){
@@ -256,7 +256,7 @@ function calcRow(p, s, rates){
   if(!isFinite(r.avgDisc)) r.avgDisc = 0;
   r.min = s.min; r.max = s.max;
   r.wsNet = r.wsEur * (1 - r.avgDisc);
-  if(r.avgDisc <= MIN_DISC + 1e-9){ r.status='nodisc'; r.comp=0; return r; }
+  if(MIN_DISC!=null && r.avgDisc <= MIN_DISC + 1e-9){ r.status='nodisc'; r.comp=0; return r; }
   if(p.excl){ r.status='excl'; r.comp=0; return r; }
   r.profit = r.wsNet - r.cifNet;
   r.pct = r.wsNet ? r.profit / r.wsNet : 0;
