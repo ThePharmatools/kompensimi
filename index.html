@@ -193,6 +193,7 @@ tr.excl td{color:var(--muted)}
   <div class="tbl"><table id="calcTbl"></table></div>
   <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Produktet me skonto 0 nuk kompensohen. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
  </div>
+ <div class="print-only" id="printSign" style="margin-top:24px"></div>
 </section>
 
 <!-- SHITJET -->
@@ -290,15 +291,19 @@ function calcRow(p, s, rates){
 }
 
 function calculate(products, sales, rates){
-  const idx = new Map(sales.map(s => [norm(s.name), s]));
-  const used = new Set();
-  const rows = products.map(p => {
-    let s=null;
-    for(const k of [p.n, ...(p.al||[])].map(norm)){ if(idx.has(k)){ s=idx.get(k); used.add(k); break; } }
-    if(!s && p.sap){ const x=sales.find(q=>q.code && q.code===p.sap && !used.has(norm(q.name))); if(x){ s=x; used.add(norm(x.name)); } }
-    return calcRow(p, s, rates);
-  });
-  const outside = sales.filter(s => !used.has(norm(s.name)));
+  /* 1) emri i njohur ose kodi SAP, 2) markë + doza; disa emra për të njëjtin produkt bashkohen */
+  const agg=new Map(), outside=[];
+  const add=(i,s)=>{ const a=agg.get(i); if(!a){ agg.set(i,{...s}); return; }
+    for(const f of ['lines','qtyNet','qtySold','grossSold','grossNet','discNet']) a[f]=(a[f]||0)+(s[f]||0);
+    if(s.min!=null) a.min=a.min==null?s.min:Math.min(a.min,s.min); if(s.max!=null) a.max=a.max==null?s.max:Math.max(a.max,s.max); };
+  const byName=new Map(); products.forEach((p,i)=>{ for(const k of [p.n,...(p.al||[])]) byName.set(norm(k),i); });
+  for(const s of sales){
+    let i=byName.get(norm(s.name));
+    if(i==null && s.code){ const j=products.findIndex(p=>p.sap && p.sap===s.code); if(j>=0) i=j; }
+    if(i==null){ const m=matchProduct(s.name, products, s.code); if(m) i=products.indexOf(m.p); }
+    if(i==null || i<0) outside.push(s); else add(i,s);
+  }
+  const rows = products.map((p,i) => calcRow(p, agg.get(i), rates));
   const total = rows.reduce((a,r) => a + (r.status==='ok' ? r.comp : 0), 0);
   return { rows, outside, total };
 }
