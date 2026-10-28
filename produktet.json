@@ -141,7 +141,7 @@
   {
    "n": "Vasoserc Bid – Tabl. 24mg x30",
    "cif": 2.03,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": []
   },
@@ -341,7 +341,7 @@
   {
    "n": "Ornisid – Film tabl. 250mg x20",
    "cif": 8,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": [
     "Ornisid 250 mg x 20 tabs - Abdiibrahim",
@@ -352,7 +352,7 @@
   {
    "n": "Ornisid – Tabl. vaginale 500mg x5",
    "cif": 8.33,
-   "disc": 0,
+   "disc": 0.09,
    "rim": false,
    "al": []
   },
@@ -380,7 +380,7 @@
   {
    "n": "Alyse – Kaps. 75mg x28",
    "cif": 2.88,
-   "disc": 0,
+   "disc": 0.09,
    "rim": true,
    "al": [
     "Alyse 75mg x28cp Pregabaline",
@@ -390,7 +390,7 @@
   {
    "n": "Alyse – Kaps. 150mg x28",
    "cif": 4.24,
-   "disc": 0,
+   "disc": 0.09,
    "rim": true,
    "al": [
     "Alyse150mg x28cp Pregabaline",
