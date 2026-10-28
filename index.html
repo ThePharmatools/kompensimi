@@ -140,7 +140,6 @@ tr.excl td{color:var(--muted)}
    <p class="note"><b id="xcRefreshInfo"></b> Renditur nga diferenca më e madhe. "Rillogaritur" = shitjet e raportit (sasia, çmimi pa skonto, zbritja reale) + kursi zyrtar lart + CIF Net nga fatura e distributorit.</p>
    <div class="tbl"><table id="xcTbl"></table></div>
   </div>
-  <div class="card" id="xcUnm" style="display:none"><h2>Rreshta në Excel që nuk u lidhën me asnjë produkt</h2><div class="tbl"><table id="xcUnmTbl"></table></div></div>
  </div>
 </section>
 
@@ -919,7 +918,7 @@ function renderXC(){
   const bad=res.rows.filter(r=>r.issues.length).length;
   $('xcTheir').textContent='€ '+fmt(res.theirTotal); $('xcOur').textContent='€ '+fmt(res.ourTotal);
   { const d=res.theirTotal-res.ourTotal; $('xcDiff').textContent=(d>=0?'+':'−')+' € '+fmt(Math.abs(d)); } $('xcBad').textContent=bad;
-  msg('xcMsg', bad||res.unmatched.length?'warn':'ok', (bad?`${bad} produkte kanë vërejtje.`:'Çdo produkt përputhet.') + (res.unmatched.length?` ${res.unmatched.length} rreshta në Excel nuk u lidhën me asnjë produkt (shiko poshtë).`:''));
+  msg('xcMsg', bad?'warn':'ok', bad?`${bad} produkte kanë vërejtje.`:'Çdo produkt përputhet.');
   let h='<thead><tr><th>Produkti</th><th>Sasia Excel</th><th>Sasia raport</th><th>Çmimi LEK Excel</th><th>Çmimi LEK raport</th><th>Zbr. Excel</th><th>Zbr. raport</th><th>Kursi Excel</th><th>CIF Gross Excel</th><th>CIF 2026</th><th>CIF Net Excel</th><th>Kompensimi Excel €</th><th>Rillogaritur €</th><th>Diferenca €</th><th class="l">Vërejtje</th></tr></thead><tbody>';
   for(const r of res.rows){
     h+=`<tr><td title="${esc(r.theirNames.join(' | '))}">${esc(r.name)}</td><td>${r.theirQty??''}</td><td>${r.qty??''}</td><td>${fmt(r.theirWsLek)}</td><td>${fmt(r.wsLek)}</td><td>${pct(r.theirDisc)}</td><td>${pct(r.avgDisc)}</td><td>${r.theirRate?(+r.theirRate.toFixed(2)):''}</td><td>${fmt(r.theirCif)}</td><td>${fmt(r.akbpmCif)}</td><td>${fmt(r.theirCifNet)}</td>
@@ -928,8 +927,6 @@ function renderXC(){
   }
   h+=`</tbody><tfoot><tr><td>TOTALI</td><td colspan="10"></td><td>${fmt(res.theirTotal)}</td><td>${fmt(res.ourTotal)}</td><td${cls(res.theirTotal-res.ourTotal)}>${fmt(res.theirTotal-res.ourTotal)}</td><td></td></tr></tfoot>`;
   $('xcTbl').innerHTML=h;
-  $('xcUnm').style.display=res.unmatched.length?'':'none';
-  $('xcUnmTbl').innerHTML='<thead><tr><th>Emri në Excel</th><th>Sasia</th><th>Kompensimi €</th></tr></thead><tbody>'+res.unmatched.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.qty??''}</td><td>${fmt(x.comp)}</td></tr>`).join('')+'</tbody>';
 }
 $('xcExport').onclick=()=>{
   if(!XC.res||!needXlsx()) return;
@@ -937,7 +934,6 @@ $('xcExport').onclick=()=>{
   const data=[[`Cross-check kompensimi – ${ST.dist||''} · ${monthLabel(ST.month)}`],[`Excel: ${XC.file} · Raporti: ${ST.salesSrc}`],[],H,
     ...XC.res.rows.map(r=>[r.name,r.theirNames.join(' | '),r.theirQty,r.qty,rnd(r.theirWsLek,2),rnd(r.wsLek,2),rnd(r.theirDisc),rnd(r.avgDisc),r.theirRate?rnd(r.theirRate):null,r.officialRate,r.theirCif,r.akbpmCif,rnd(r.theirCifNet),rnd(r.theirComp,2),rnd(r.ourComp,2),rnd(r.diff,2),r.issues.map(x=>x[1]).join('; ')]),
     ['TOTALI',...Array(12).fill(null),rnd(XC.res.theirTotal,2),rnd(XC.res.ourTotal,2),rnd(XC.res.theirTotal-XC.res.ourTotal,2)]];
-  if(XC.res.unmatched.length) data.push([],['Rreshta në Excel pa lidhje'],...XC.res.unmatched.map(x=>[x.name,null,x.qty,null,null,null,null,null,null,null,null,null,null,rnd(x.comp,2)]));
   const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(data); ws['!cols']=[{wch:42},{wch:40},...H.slice(2).map(()=>({wch:13}))];
   XLSX.utils.book_append_sheet(wb,ws,'Cross-check'); XLSX.writeFile(wb,`CrossCheck_${ST.dist||'distributori'}_${ST.month||'muaji'}.xlsx`);
 };
