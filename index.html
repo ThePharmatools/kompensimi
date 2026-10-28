@@ -180,7 +180,7 @@ tr.excl td{color:var(--muted)}
   <h2>Ngarko shitjet e muajit</h2>
   <div class="drop" id="drop">
    Tërhiq këtu file-in Excel/CSV me shitjet, ose <label class="link">zgjidh file<input type="file" id="file" accept=".xlsx,.xls,.csv" hidden></label>
-   <div class="note" style="margin-top:6px">Ngarko raportin e shitjeve të muajit ashtu siç e nxjerr sistemi juaj (rresht për rresht, me kthimet dhe bonuset). Faqja e njeh vetë formatin dhe i grupon shitjet sipas produktit.</div>
+   <div class="note" style="margin-top:6px">Ngarko raportin e shitjeve të muajit ashtu siç e nxjerr sistemi juaj (rresht për rresht, me kthimet dhe bonuset). Faqja e njeh vetë formatin dhe i grupon shitjet sipas produktit.<br><span id="fmtHint"></span></div>
   </div>
   <p class="note" style="margin-top:14px">Ose kopjo tabelën nga Excel (bashkë me titujt) dhe ngjite këtu:</p>
   <textarea id="paste"></textarea>
@@ -300,15 +300,15 @@ function parseMatrix(M){
 
 /* ===== Formatet e raporteve të distributorëve (rresht për rresht) ===== */
 const LINE_FORMATS = [
-  { id:'A', label:'Raport me Description / Invoiced Quantity / Amount / Discount Amount',
+  { id:'A', dist:'Asgeto', label:'Raporti Asgeto (Description / Amount / Discount Amount)',
     cols:{ name:[/^description$/], qty:[/invoiced\s*quantity/], net:[/^amount$/], disc:[/^discount\s*amount$/], vendor:[/^vendor$/] },
     line:(g)=>{ const net=g.net||0, disc=g.disc||0; return { qty:g.qty, gross:net+disc, disc }; },
     keep:(g)=> !g.vendorRaw || /ph1/i.test(g.vendorRaw),
     keepNote:'Merren vetëm rreshtat me Vendor "ABDIIBRAHIM PH1".' },
-  { id:'B', label:'Raport me Artikulli - Pershkrimi / Sasia / Vlera Bruto / Zbritja',
+  { id:'B', dist:'Trimed', label:'Raporti Trimed (Artikulli / Vlera Bruto / Zbritja)',
     cols:{ name:[/artikulli.*pershkrim/], qty:[/^sasia$/], gross:[/vlera\s*bruto/], disc:[/zbritja.*vlera/] },
     line:(g)=>({ qty:g.qty, gross:g.gross||0, disc:g.disc||0 }) },
-  { id:'C', label:'Raport me Pershkrim / Sasi e Faturuar / Vlera (bonus si rresht me vlerë 0)',
+  { id:'C', dist:'Intermed', label:'Raporti Intermed (Pershkrim / Sasi e Faturuar / Vlera)',
     cols:{ name:[/^pershkrim/], qty:[/sasi.*faturuar/], net:[/^vlera$/] },
     priceFromMax:true }
 ];
@@ -352,7 +352,7 @@ function parseLines(M){
       }
       const r2=x=>Math.round(x*100)/100;
       const rows=[...agg.values()].map(a=>({...a, grossSold:r2(a.grossSold), grossNet:r2(a.grossNet), discNet:r2(a.discNet), min:a.min==null?null:r2(a.min), max:a.max==null?null:r2(a.max)}));
-      return { rows, format:F.label, note: skipped ? `${F.keepNote} U lanë jashtë ${skipped} rreshta (${skippedQty} copë) me vendor tjetër.` : '' };
+      return { rows, format:F.label, dist:F.dist, note: skipped ? `${F.keepNote} U lanë jashtë ${skipped} rreshta (${skippedQty} copë) me vendor tjetër.` : '' };
     }
   }
   return null;
@@ -543,7 +543,10 @@ function setSales(rows, src, note){
   msg('salesMsg','ok',`${note?esc(note)+'<br>':''}U lexuan ${rows.length} produkte${LAST.outside.length?` (${LAST.outside.length} jashtë listës)`:''}. Totali: <b>€ ${fmt(LAST.total)}</b> — shiko skedën <span class="link" onclick="showTab('t-calc')">Llogaritja</span>.`);
 }
 function handleSheets(sheets, src){
-  for(const [nm,M] of sheets){ const p=parseAny(M); if(p&&p.rows.length){ setSales(p.rows, `${src}${nm?' · fleta "'+nm+'"':''} · ${p.format}`, p.note); return; } }
+  if(!ST.dist){ msg('salesMsg','err','Zgjidh fillimisht distributorin tënd lart djathtas, pastaj ngarko raportin.'); $('dist').focus(); return; }
+  for(const [nm,M] of sheets){ const p=parseAny(M); if(p&&p.rows.length){
+    if(p.dist && p.dist!==ST.dist){ msg('salesMsg','err',`Ky raport duket si <b>${esc(p.format)}</b>, por distributori i zgjedhur është <b>${esc(ST.dist)}</b>. Kontrollo distributorin ose file-in.`); return; }
+    setSales(p.rows, `${src}${nm?' · fleta "'+nm+'"':''} · ${p.format}`, p.note); return; } }
   msg('salesMsg','err','Nuk u gjet tabela e shitjeve. Sigurohu që ka titujt: Produkti, Sasia neto (me kthime), Sasia e shitur (pa kthime), Vlera bruto LEK (pa kthime), Vlera bruto LEK neto, Zbritja LEK neto.');
 }
 function readSales(f){
@@ -572,7 +575,11 @@ $('btnSample').onclick=()=>{
   setSales(SAMPLE.rows.map(r=>({name:r[0],lines:r[1],qtyNet:r[2],qtySold:r[3],grossSold:r[4],grossNet:r[5],discNet:r[6],min:r[7],max:r[8]})), SAMPLE.label);
 };
 $('btnClear').onclick=()=>{ $('paste').value=''; setSales([], ''); };
+const FMT_HINT={Asgeto:'Asgeto: raporti me kolonat Description, Invoiced Quantity, Amount, Discount Amount, Vendor (llogariten vetëm rreshtat ABDIIBRAHIM PH1).',
+  Trimed:'Trimed: eksporti "Detajet" (fleta Export) me kolonat Artikulli - Pershkrimi, Sasia, Vlera Bruto, Zbritja.',
+  Intermed:'Intermed: "Abdi Ibrahim monthly report" me kolonat Pershkrim, Sasi e Faturuar, Vlera.'};
 function renderSales(){
+  $('fmtHint').innerHTML = ST.dist ? '<b>'+esc(FMT_HINT[ST.dist]||'')+'</b>' : '<b>Zgjidh distributorin lart djathtas para se të ngarkosh.</b>';
   $('salesSrc').textContent = ST.salesSrc ? '· '+ST.salesSrc : '';
   if(!ST.sales.length){ $('salesTbl').innerHTML='<tbody><tr><td class="l note">Nuk ka shitje të ngarkuara.</td></tr></tbody>'; return; }
   const names=new Set(products().map(p=>norm(p.n)));
