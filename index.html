@@ -136,8 +136,8 @@ tr.excl td{color:var(--muted)}
    <div class="kpi"><div class="l">Produkte me vërejtje</div><div class="v" id="xcBad">–</div></div>
   </div>
   <div class="card">
-   <div class="row" style="justify-content:space-between"><h2 style="margin:0">Krahasimi për produkt</h2><div class="row noprint"><button id="xcExport">Shkarko Excel</button><button onclick="window.print()">Printo / PDF</button></div></div>
-   <p class="note">Renditur nga diferenca më e madhe. "Rillogaritur" = shitjet e raportit (sasia, çmimi pa skonto, zbritja reale) + kursi zyrtar lart + CIF Net nga fatura e distributorit.</p>
+   <div class="row" style="justify-content:space-between"><h2 style="margin:0">Krahasimi për produkt</h2><div class="row noprint"><button id="xcRefresh">↻ Rifresko</button><button id="xcExport">Shkarko Excel</button><button onclick="window.print()">Printo / PDF</button></div></div>
+   <p class="note"><b id="xcRefreshInfo"></b> Renditur nga diferenca më e madhe. "Rillogaritur" = shitjet e raportit (sasia, çmimi pa skonto, zbritja reale) + kursi zyrtar lart + CIF Net nga fatura e distributorit.</p>
    <div class="tbl"><table id="xcTbl"></table></div>
   </div>
   <div class="card" id="xcUnm" style="display:none"><h2>Rreshta në Excel që nuk u lidhën me asnjë produkt</h2><div class="tbl"><table id="xcUnmTbl"></table></div></div>
@@ -871,12 +871,21 @@ async function fetchOfficialList(){
   for(const go of tries){ try{ const r=await go(); if(r.ok){ const j=await r.json(); if(j && Array.isArray(j.products)) return j; } }catch(e){} }
   return null;
 }
-async function loadOfficialList(force){
+async function loadOfficialList(force, quiet){
   if(diffList().length && !force) return;
   const j=await fetchOfficialList();
-  if(j && applyData(j)){ ADMIN.orig=snap(); renderAll(); renderAdmin(); if(force) msg('adminMsg','ok','Lista u rifreskua nga GitHub'+(CIF_UPDATED?` (ndryshuar më ${CIF_UPDATED})`:'')+'.'); }
-  else if(force) msg('adminMsg','err','Lista nuk u lexua dot nga GitHub. Provo përsëri pas pak.');
+  if(j && applyData(j)){ ADMIN.orig=snap(); renderAll(); renderAdmin(); if(force && !quiet) msg('adminMsg','ok','Lista u rifreskua nga GitHub'+(CIF_UPDATED?` (ndryshuar më ${CIF_UPDATED})`:'')+'.'); return true; }
+  else if(force && !quiet) msg('adminMsg','err','Lista nuk u lexua dot nga GitHub. Provo përsëri pas pak.');
+  return false;
 }
+$('xcRefresh').onclick=async()=>{
+  const b=$('xcRefresh'); b.disabled=true; b.textContent='↻ Duke rifreskuar…';
+  let ok=true;
+  if(!diffList().length) ok=await loadOfficialList(true, true);
+  renderAll();
+  b.disabled=false; b.textContent='↻ Rifresko';
+  $('xcRefreshInfo').textContent = (diffList().length ? 'Rillogaritur me ndryshimet e papublikuara te Produktet & CIF' : ok ? 'Rillogaritur me listën e fundit të CIF nga GitHub' : 'Rillogaritur (lista nga GitHub nuk u lexua, u përdor ajo aktuale)') + ' · ' + new Date().toLocaleTimeString('sq-AL');
+};
 $('btnRefresh').onclick=()=>{ if(diffList().length && !confirm('Ke ndryshime të papublikuara. Rifreskimi i fshin. Vazhdo?')) return; loadOfficialList(true); };
 
 
