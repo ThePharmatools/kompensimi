@@ -255,7 +255,7 @@ tr.excl td{color:var(--muted)}
     <button id="btnLogout" style="display:none">Dil</button>
    </div>
   </div>
-  <p class="note">Burimi i CIF: <span id="cifSrc"></span>. CIF Gross, zbritja e faturës dhe rimbursimi mund të ndryshohen direkt në tabelë. Kolona "Emri në shitje" tregon si lidhet produkti me raportet e distributorëve.</p>
+  <p class="note">Burimi i CIF: <span id="cifSrc"></span>. CIF Gross, zbritja e faturës dhe rimbursimi mund të ndryshohen direkt në tabelë. Çmimi net për kuti merret nga raporti i shitjeve i ngarkuar (vlera neto ÷ sasia neto); del me të kuqe kur është nën CIF Net. Kolona "Emri në shitje" tregon si lidhet produkti me raportet e distributorëve.</p>
   <div id="adminMsg"></div>
   <div id="adminLogin" class="card" style="display:none;background:#f9fafb">
    <h2>Hyrja e adminit</h2>
@@ -278,6 +278,7 @@ function calcRow(p, s, rates){
   r.rate = r.rim ? rates.r : rates.n;
   if(!s){ r.status='nosale'; r.comp=0; return r; }
   r.qtyNet = +s.qtyNet; r.qtySold = +s.qtySold;
+  r.netLek = r.qtyNet ? ((+s.grossNet)-(+s.discNet))/r.qtyNet : null; /* çmimi net për 1 kuti nga raporti */
   r.wsLek = r.qtySold ? (+s.grossSold)/r.qtySold : 0;
   r.wsEur = r.wsLek / r.rate;
   r.avgDisc = (+s.grossNet) ? (+s.discNet)/(+s.grossNet) : 0;
@@ -780,12 +781,12 @@ function renderCheck(){
 function renderProd(){
   $('cifSrc').textContent = CIF_SOURCE + (CIF_UPDATED ? ` · ndryshuar nga admini më ${CIF_UPDATED}` : '');
   const changed = p => { const o=ADMIN.orig.get(p.n); return o && (o.cif!==p.cif || o.disc!==p.disc || o.rim!==p.rim); };
-  $('prodTbl').innerHTML='<thead><tr><th>Produkti (AKBPM)</th><th>CIF Gross €</th><th>Zbritja e faturës %</th><th>CIF Net €</th><th>Me rimbursim</th><th>Kursi</th><th class="l">Emri në shitje</th></tr></thead><tbody>'+
+  $('prodTbl').innerHTML='<thead><tr><th>Produkti (AKBPM)</th><th>CIF Gross €</th><th>Zbritja e faturës %</th><th>CIF Net €</th><th>Me rimbursim</th><th>Kursi</th><th>Çmimi net/kuti LEK (raport)</th><th>Çmimi net/kuti € (raport)</th><th class="l">Emri në shitje</th></tr></thead><tbody>'+
     products().map((p,i)=>`<tr${changed(p)?' style="background:#fff8e6"':''}><td>${esc(p.n)}</td>
       <td><input type="number" step="0.01" min="0" data-i="${i}" data-k="cif" value="${p.cif}" style="width:90px"></td>
       <td><input type="number" step="0.1" min="0" max="100" data-i="${i}" data-k="disc" value="${+(p.disc*100).toFixed(2)}" style="width:80px"></td>
       <td>${fmt(p.cif*(1-p.disc))}</td>
-      <td style="text-align:center"><input type="checkbox" data-i="${i}" data-k="rim" ${p.rim?'checked':''}></td><td>${p.rim?ST.rates.r:ST.rates.n}</td>
+      <td style="text-align:center"><input type="checkbox" data-i="${i}" data-k="rim" ${p.rim?'checked':''}></td><td>${p.rim?ST.rates.r:ST.rates.n}</td>${(()=>{ const r=LAST&&LAST.rows[i]; const v=r&&r.netLek!=null?r.netLek:null; return `<td>${fmt(v)}</td><td${v!=null&&v/(p.rim?ST.rates.r:ST.rates.n)<p.cif*(1-p.disc)?' class="neg"':''}>${v!=null?fmt(v/(p.rim?ST.rates.r:ST.rates.n)):''}</td>`; })()}
       <td class="l">${(p.al||[]).map(esc).join('<br>')||'<span class="note">– pa lidhje ende –</span>'}</td></tr>`).join('')+'</tbody>';
   $('prodTbl').querySelectorAll('input[data-k]').forEach(inp=>inp.onchange=()=>{
     const p=PRODUCT_LIST[+inp.dataset.i], k=inp.dataset.k;
