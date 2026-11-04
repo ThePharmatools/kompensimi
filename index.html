@@ -500,20 +500,9 @@ function crossCheck(compRows, sales, list, rates){
       R.formulaComp = ok ? fsum : NaN; R.clipped = ok ? clipped : 0; }
     /* rillogaritja: shitjet reale + kursi zyrtar + CIF Net i distributorit */
     if(s){
-      /* lotet që distributori i ka me skonto 0 nuk kompensohen: hiqen nga sasia dhe nga vlera bruto */
-      const z = g ? g.rows.filter(r=>r.disc!=null && isZeroDisc(r.disc) && r.qty) : [];
-      const zQty = z.reduce((a,r)=>a+r.qty,0), zComp = z.reduce((a,r)=>a+(r.comp||0),0);
-      const rest = g ? g.rows.filter(r=>!z.includes(r)) : [];
-      const wAvg = (rows,f)=>{ const v=rows.filter(r=>r[f]!=null); const q=v.reduce((a,r)=>a+Math.abs(r.qty||0),0); return v.length&&q ? v.reduce((a,r)=>a+r[f]*Math.abs(r.qty||0),0)/q : null; };
-      const cifRest = wAvg(rest,'cifNet');
-      const cifNet = cifRest!=null ? cifRest : R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
-      const q = R.qty - zQty;
-      const grossRest = (s.grossNet||0) - zQty*R.wsLek;
-      const dRest = grossRest>0 ? (s.discNet||0)/grossRest : 0;
-      const wn=R.wsLek/R.officialRate*(1-dRest);
-      R.ourComp = (isZeroDisc(R.avgDisc) || isZeroDisc(dRest) || q===0) ? 0 : wn*q*0.15-(wn-cifNet)*q; R.usedCifNet=cifNet; R.zeroLotQty=zQty;
+      const cifNet = R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
+      const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourComp = isZeroDisc(R.avgDisc) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
       if(isZeroDisc(R.avgDisc)) R.issues.push(['p-no','Skonto 0 – nuk kompensohet']);
-      else if(zQty) R.issues.push([Math.abs(zComp)>=0.01?'p-bad':'p-info', `${zQty} kuti me skonto 0 – nuk kompensohen`+(Math.abs(zComp)>=0.01?` (distributori i ka kompensuar ${zComp.toFixed(2)} €)`:'')]);
     } else R.ourComp=0;
     R.diff=(R.theirComp||0)-(R.ourComp||0);
     /* vërejtjet */
