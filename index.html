@@ -191,7 +191,7 @@ tr.excl td{color:var(--muted)}
  <div class="card">
   <h2>Llogaritja për produkt</h2>
   <div class="tbl"><table id="calcTbl"></table></div>
-  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Produktet me skonto 0 nuk kompensohen. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
+  <p class="note">Për kompensim = 15% × WS Net € × Sasia neto − (WS Net € − CIF Net €) × Sasia neto. Nuk kompensohen: produktet me skonto 0 dhe ato me fitim 15% ose më shumë. Kur kthimet janë më shumë se shitjet, sasia neto del negative dhe llogaritja bëhet me minus. Vlerat negative përfshihen në total.</p>
  </div>
  <div class="print-only" id="printSign" style="margin-top:24px"></div>
 </section>
@@ -262,6 +262,7 @@ tr.excl td{color:var(--muted)}
 
 <script id="core">
 /* ===== Llogaritja (pa DOM) ===== */
+const MAX_PROFIT = 0.15; /* fitim ≥ 15% → pa kompensim */
 const isZeroDisc = d => Math.abs(d||0) < 0.0005; /* skonto 0 → nuk kompensohet */
 const norm = s => String(s ?? '').trim().replace(/\s+/g,' ').toLowerCase();
 
@@ -287,6 +288,8 @@ function calcRow(p, s, rates){
   r.p15box = r.qtyNet ? r.p15val / r.qtyNet : 0;
   r.comp = r.p15val - r.pl;
   r.status = 'ok';
+  /* kushti: fitimi ≥ 15% → nuk kompensohet */
+  if(r.pct >= MAX_PROFIT - 1e-9){ r.status='p15'; r.comp=0; }
   return r;
 }
 
@@ -492,16 +495,19 @@ function crossCheck(compRows, sales, list, rates){
     R.akbpmCif=p?p.cif:null; R.rim=p?p.rim:false; R.officialRate=R.rim?rates.r:rates.n;
     if(s){ R.qty=s.qtyNet; R.wsLek=s.qtySold?s.grossSold/s.qtySold:0; R.avgDisc=s.grossNet?s.discNet/s.grossNet:0; }
     /* kontrolli i formulës me të dhënat e tyre */
-    if(g){ let clipped=0, fsum=0, ok=true;
+    if(g){ let fsum=0, ok=true;
       for(const r of g.rows){ const ws=(r.wsEur!=null?r.wsEur:(r.wsLek&&r.rate?r.wsLek/r.rate:null));
         if(ws==null||r.disc==null||r.cifNet==null||r.qty==null){ ok=false; break; }
-        const wn=ws*(1-r.disc); const f=wn*r.qty*0.15-(wn-r.cifNet)*r.qty;
-        if(f<0 && r.comp===0){ clipped+=f; fsum+=0; } else fsum+=f; }
-      R.formulaComp = ok ? fsum : NaN; R.clipped = ok ? clipped : 0; }
+        const wn=ws*(1-r.disc); const pr=wn?(wn-r.cifNet)/wn:0;
+        const f = pr>=MAX_PROFIT-1e-9 ? 0 : wn*r.qty*0.15-(wn-r.cifNet)*r.qty;
+        fsum+=f; }
+      R.formulaComp = ok ? fsum : NaN; }
     /* rillogaritja: shitjet reale + kursi zyrtar + CIF Net i distributorit */
     if(s){
       const cifNet = R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
-      const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourComp = isZeroDisc(R.avgDisc) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
+      const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourProfitPct = wn ? (wn-cifNet)/wn : 0;
+      R.ourComp = (isZeroDisc(R.avgDisc) || R.ourProfitPct>=MAX_PROFIT-1e-9) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
+      if(!isZeroDisc(R.avgDisc) && R.ourProfitPct>=MAX_PROFIT-1e-9) R.issues.push(['p-no',`Fitim ${(R.ourProfitPct*100).toFixed(1)}% ≥ 15% – nuk kompensohet`]);
       if(isZeroDisc(R.avgDisc)) R.issues.push(['p-no','Skonto 0 – nuk kompensohet']);
     } else R.ourComp=0;
     R.diff=(R.theirComp||0)-(R.ourComp||0);
@@ -516,7 +522,6 @@ function crossCheck(compRows, sales, list, rates){
     const noComp = g && g.rows.every(r=>r.comp==null);
     if(noComp && s && !isZeroDisc(R.avgDisc)) R.issues.push(['p-info','Distributori nuk e ka kompensuar këtë produkt']);
     else if(noComp) {}
-    if(g && R.clipped<-0.005 && !(s && isZeroDisc(R.avgDisc))) R.issues.push(['p-info',`Distributori ka vënë 0 në vend të ${R.clipped.toFixed(2)} (kompensim negativ)`]);
     if(!noComp && g && R.formulaComp!=null && isFinite(R.formulaComp) && Math.abs(R.formulaComp-R.theirComp)>0.05) R.issues.push(['p-bad',`Gabim formule: me të dhënat e tyre del ${R.formulaComp.toFixed(2)}, jo ${R.theirComp.toFixed(2)}`]);
     if(g && g.rows.some(r=>!String(r.inv||'').trim())) R.issues.push(['p-warn','Mungon nr. i faturës']);
     out.push(R);
@@ -556,8 +561,8 @@ const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 const MONTHS=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
 const monthLabel = m => { if(!m) return '(pa muaj)'; const [y,mm]=m.split('-'); return MONTHS[+mm-1]+' '+y; };
 const dt = t => t ? new Date(t).toLocaleString('sq-AL',{dateStyle:'medium',timeStyle:'short'}) : '';
-const STATUS={ok:'Kompensohet',nodisc:'Skonto 0',excl:'Përjashtuar',nosale:'Pa shitje'};
-const STATUS_LONG={ok:'Kompensohet',nodisc:'Skonto 0 – nuk kompensohet',excl:'Përjashtuar',nosale:'Pa shitje'};
+const STATUS={ok:'Kompensohet',p15:'Fitim ≥ 15%',nodisc:'Skonto 0',excl:'Përjashtuar',nosale:'Pa shitje'};
+const STATUS_LONG={ok:'Kompensohet',p15:'Fitim ≥ 15% – nuk kompensohet',nodisc:'Skonto 0 – nuk kompensohet',excl:'Përjashtuar',nosale:'Pa shitje'};
 function msg(el, type, text){ $(el).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : ''; }
 const products = () => PRODUCT_LIST;
 const needXlsx = () => { if(typeof XLSX==='undefined'){ alert('Libraria Excel nuk u ngarkua. Kontrollo internetin dhe rifresko faqen.'); return false; } return true; };
@@ -595,7 +600,7 @@ function renderCalc(){
   let h = '<thead><tr>'+H.map((x,i)=>`<th${i===16?' class="l"':''}>${x}</th>`).join('')+'</tr></thead><tbody>';
   for(const r of res.rows){
     if(r.status==='nosale') continue;
-    const ok = r.status==='ok';
+    const ok = r.status==='ok' || r.status==='p15';
     const st = `<span class="pill ${ok?'p-ok':r.status==='noqty'?'p-bad':'p-no'}">${STATUS[r.status]}</span>`;
     h += `<tr class="${ok?'':'excl'}"><td>${esc(r.name)}</td><td>${fmt(r.cif)}</td><td>${pct(r.disc)}</td><td>${fmt(r.cifNet)}</td><td>${r.rim?'Po':'Jo'}</td>
       <td>${fmt(r.wsLek)}</td><td${cls(r.qtyNet)}>${r.qtyNet??''}</td><td>${fmt(r.wsEur)}</td><td>${pct(r.avgDisc)}</td><td>${fmt(r.wsNet)}</td>
@@ -777,7 +782,7 @@ function renderCheck(){
     if(r.min!=null && r.max!=null && Math.abs(r.max-r.min)>0.005) notes.push(['p-warn','Shitur me disa çmime']);
     if(r.qtyNet<0) notes.push(['p-warn','Kthime më shumë se shitje (sasi negative)']);
     if(r.status==='nosale') notes.push(['p-no','Pa shitje këtë muaj']);
-    if(r.status==='nodisc') notes.push(['p-no',STATUS_LONG.nodisc]);
+    if(r.status==='nodisc'||r.status==='p15') notes.push(['p-no',STATUS_LONG[r.status]]);
     if(r.status==='ok' && r.comp<0) notes.push(['p-info','Kompensim negativ']);
     let dP=null,dQ=null;
     if(p && p.wsLek!=null && r.wsLek!=null){ dP=r.wsLek-p.wsLek; if(Math.abs(dP)>0.005) notes.push(['p-warn','Çmimi ndryshoi']); }
