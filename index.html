@@ -711,19 +711,26 @@ function setSales(rows, src, note){
   msg('salesMsg','ok',`${note?esc(note)+'<br>':''}U lexuan ${rows.length} produkte. Vazhdo te <span class="link" onclick="showTab('t-xc')">Cross-check</span> ose shiko <span class="link" onclick="showTab('t-calc')">Llogaritjen</span> (€ ${fmt(LAST.total)}).`);
 }
 function handleSheets(sheets, src){
-  if(!ST.dist){ msg('salesMsg','err','Zgjidh fillimisht distributorin tënd lart djathtas, pastaj ngarko raportin.'); $('dist').focus(); return; }
   for(const [nm,M] of sheets){ const p=parseAny(M); if(p&&p.rows.length){
-    if(p.dist && p.dist!==ST.dist){ msg('salesMsg','err',`Ky raport duket si <b>${esc(p.format)}</b>, por distributori i zgjedhur është <b>${esc(ST.dist)}</b>. Kontrollo distributorin ose file-in.`); return; }
-    setSales(p.rows, `${src}${nm?' · fleta "'+nm+'"':''} · ${p.format}`, p.note); return; } }
-  msg('salesMsg','err','Nuk u gjet tabela e shitjeve. Sigurohu që ka titujt: Produkti, Sasia neto (me kthime), Sasia e shitur (pa kthime), Vlera bruto LEK (pa kthime), Vlera bruto LEK neto, Zbritja LEK neto.');
+    if(p.dist && !ST.dist){ ST.dist=p.dist; syncHeader(); }
+    if(!ST.dist){ msg('salesMsg','err','Zgjidh fillimisht distributorin lart djathtas, pastaj ngarko raportin.'); $('dist').focus(); return false; }
+    if(p.dist && p.dist!==ST.dist){ msg('salesMsg','err',`Ky raport duket si <b>${esc(p.format)}</b>, por distributori i zgjedhur është <b>${esc(ST.dist)}</b>. Kontrollo distributorin ose file-in.`); return false; }
+    setSales(p.rows, `${src}${nm?' · fleta "'+nm+'"':''} · ${p.format}`, p.note); return true; } }
+  msg('salesMsg','err','Nuk u gjet tabela e shitjeve në këtë file. Ngarko raportin e shitjeve të distributorit (Asgeto, Trimed ose Intermed).');
+  return false;
 }
 function readSales(f){
   if(!f || !needXlsx()) return;
   const rd=new FileReader();
   rd.onload=e=>{ try{
-    const wb=XLSX.read(e.target.result,{type:'array'});
+    const wb=XLSX.read(e.target.result,{type:'array',cellFormula:true});
     if(wb.Sheets['_data']){ msg('salesMsg','warn','Ky është një file kompensimi i ruajtur. Për ta miratuar përdor "Hap file për miratim" lart.'); return; }
     const order=[...wb.SheetNames].sort((a,b)=>(/sales|shitje|export/i.test(b))-(/sales|shitje|export/i.test(a)));
+    const isComp = wb.SheetNames.some(n=>parseCompMatrix(sheetCells(wb.Sheets[n])));
+    if(isComp){ /* file kompensimi (p.sh. Trimed "Profit&Lost") → shkon te Cross-check */
+      loadCompWorkbook(wb, f.name);
+      msg('salesMsg','ok',`Ky është file-i i kompensimit të distributorit, prandaj u hap te <span class="link" onclick="showTab('t-xc')">Cross-check</span>.`+(ST.sales.length?` Shitjet: ${esc(ST.salesSrc)}.`:''));
+      showTab('t-xc'); return; }
     handleSheets(order.map(n=>[n,XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})]), f.name);
   }catch(err){ msg('salesMsg','err','Gabim në leximin e file-it: '+esc(err.message)); } };
   rd.readAsArrayBuffer(f);
@@ -906,27 +913,36 @@ function sheetCells(ws){
   for(let r=R.s.r;r<=R.e.r;r++){ const row=[]; for(let c=R.s.c;c<=R.e.c;c++){ const cell=ws[XLSX.utils.encode_cell({r,c})]; row.push(cell?{v:cell.v,f:cell.f,w:cell.w}:null); } C.push(row); }
   return C;
 }
-$('xcFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f||!needXlsx()) return;
-  const rd=new FileReader(); rd.onload=ev=>{ try{
-    const wb=XLSX.read(ev.target.result,{type:'array',cellFormula:true});
+function loadCompWorkbook(wb, fname){
     const found=wb.SheetNames.map(n=>[n,parseCompMatrix(sheetCells(wb.Sheets[n]))]).filter(x=>x[1]);
-    if(!found.length){ msg('xcMsg','err','Nuk u gjet tabela e kompensimit. Duhen të paktën kolonat e produktit (Product / Artikulli), sasisë (Total Monthly Sales / Kuti), CIF Net ose CIF Gross, dhe "Total value to be compensated".'); return; }
-    XC.file=f.name; XC.sheets=found; XC.sheet=found[0][0]; XC.rows=found[0][1];
+    if(!found.length){  msg('xcMsg','err','Nuk u gjet tabela e kompensimit. Duhen të paktën kolonat e produktit (Product / Artikulli), sasisë (Total Monthly Sales / Kuti), CIF Net ose CIF Gross, dhe "Total value to be compensated".'); return false; }
+    XC.file=fname; XC.sheets=found; XC.sheet=found[0][0]; XC.rows=found[0][1];
     /* muaji nga emri i fletës, p.sh. "Profit&Lost October 2026" */
     if(!ST.month){ const M={january:1,janar:1,february:2,shkurt:2,march:3,mars:3,april:4,prill:4,may:5,maj:5,june:6,qershor:6,july:7,korrik:7,august:8,gusht:8,september:9,shtator:9,october:10,tetor:10,november:11,nentor:11,'nëntor':11,december:12,dhjetor:12};
-      const m=(XC.sheet+' '+f.name).toLowerCase().match(/(january|janar|february|shkurt|march|mars|april|prill|may|maj|june|qershor|july|korrik|august|gusht|september|shtator|october|tetor|november|n[eë]ntor|december|dhjetor)\D{0,3}(20\d\d)/);
+      const m=(XC.sheet+' '+fname).toLowerCase().match(/(january|janar|february|shkurt|march|mars|april|prill|may|maj|june|qershor|july|korrik|august|gusht|september|shtator|october|tetor|november|n[eë]ntor|december|dhjetor)\D{0,3}(20\d\d)/);
       if(m){ ST.month=`${m[2]}-${String(M[m[1]]).padStart(2,'0')}`; syncHeader(); } }
     /* nëse s'ka shitje të ngarkuara dhe file-i ka edhe fletën e shitjeve, përdore atë */
     if(!ST.sales.length){
       for(const n of wb.SheetNames){ if(found.some(x=>x[0]===n)) continue;
         const p=parseAny(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}));
-        if(p && p.rows.length && p.format!=='Tabelë e përmbledhur'){
+        if(p && p.rows.length){
           if(p.dist && ST.dist && p.dist!==ST.dist) continue;
           if(p.dist && !ST.dist){ ST.dist=p.dist; syncHeader(); }
-          setSales(p.rows, `${f.name} · fleta "${n}" (brenda file-it të distributorit)`, p.note); XC.embeddedSales=n; break; }
+          setSales(p.rows, `${fname} · fleta "${n}" (brenda file-it të distributorit)`, p.note); XC.embeddedSales=n; break; }
       } }
     $('xcSheet').innerHTML=found.map(([n])=>`<option>${esc(n)}</option>`).join(''); $('xcSheetWrap').style.display=found.length>1?'':'none';
     renderXC();
+  return true;
+}
+$('xcFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f||!needXlsx()) return;
+  const rd=new FileReader(); rd.onload=ev=>{ try{
+    const wb=XLSX.read(ev.target.result,{type:'array',cellFormula:true});
+    if(!loadCompWorkbook(wb, f.name)){
+      /* ndoshta u zgjodh raporti i shitjeve këtu */
+      const order=[...wb.SheetNames].sort((a,b)=>(/sales|shitje|export/i.test(b))-(/sales|shitje|export/i.test(a)));
+      for(const n of order){ const p=parseAny(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}));
+        if(p&&p.rows.length){ if(handleSheets([[n,XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})]], f.name)){ renderXC(); msg('xcMsg','info','Ky ishte raporti i shitjeve dhe u ngarkua si i tillë. Tani zgjidh edhe Excel-in e kompensimit të distributorit.'); } return; } }
+    }
   }catch(err){ msg('xcMsg','err','Gabim në leximin e file-it: '+esc(err.message)); } };
   rd.readAsArrayBuffer(f);
 };
