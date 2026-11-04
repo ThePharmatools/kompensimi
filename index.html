@@ -404,9 +404,9 @@ function parseLines(M){
 
 /* ===== Cross-check: lexon Excel-in e kompensimit të distributorit ===== */
 const XC_COLS = {
-  name:[/^produ/], inv:[/invoice\s*n/], date:[/invoice\s*date/], cif:[/cif\s*gross/], invDisc:[/^(invoice\s*)?discount$/],
-  cifNet:[/cif\s*net/], qty:[/total\s*monthly\s*sales|^sasi/], wsLek:[/whole\s*saler\s*price.*lek/], wsEur:[/whole\s*saler\s*price(?!.*lek)/],
-  disc:[/average\s*discount|max\s*discount|discount\s*sent/], wsNet:[/net\s*whole/], comp:[/compensat/], rim:[/rimbursim/]
+  name:[/^produ/, /^artikulli$/, /^pershkrim/], inv:[/invoice\s*n/, /inv\.?\s*no/, /nr\.?\s*fatur/], date:[/invoice\s*date/, /inv\.?\s*date/, /data.*fatur/], cif:[/cif\s*gross/], invDisc:[/^(invoice\s*)?discount$/, /^disc\s*%$/],
+  cifNet:[/cif\s*net/], qty:[/total\s*monthly\s*sales|^sasi/, /^kuti$/], wsLek:[/whole\s*saler\s*price.*lek/, /price\s*in\s*all/], wsEur:[/whole\s*saler\s*price(?!.*lek)/],
+  disc:[/average\s*discount|max\s*discount|discount\s*sent/, /disc.*mesatar/], wsNet:[/net\s*whole/], comp:[/compensat/], rim:[/rimbursim/], rate:[/lloji.*kurs/, /^kursi?$/, /exchange\s*rate/]
 };
 function parseCompMatrix(C){ /* C: rreshta me {v,f} */
   for(let i=0;i<Math.min(C.length,15);i++){
@@ -421,13 +421,13 @@ function parseCompMatrix(C){ /* C: rreshta me {v,f} */
     for(let r=i+1;r<C.length;r++){
       const row=C[r]||[]; const nm=String(row[map.name]?.v??'').trim();
       const val=k=>k in map ? toNum(row[map[k]]?.v) : null;
-      if(!nm){ continue; }
+      if(!nm || /^(grand\s*)?total/i.test(nm)){ continue; }
       const x={ name:nm, inv:k('inv'), date:k('date'), cif:val('cif'), invDisc:val('invDisc'), cifNet:val('cifNet'), qty:val('qty'),
-        wsLek:val('wsLek'), wsEur:val('wsEur'), disc:val('disc'), wsNet:val('wsNet'), comp:val('comp'), rim: 'rim' in map ? row[map.rim]?.v : null, rate:null };
+        wsLek:val('wsLek'), wsEur:val('wsEur'), disc:val('disc'), wsNet:val('wsNet'), comp:val('comp'), rim: 'rim' in map ? row[map.rim]?.v : null, rate:val('rate') };
       function k(key){ if(!(key in map)) return ''; const c=row[map[key]]; if(!c) return ''; return c.w ? String(c.w).trim() : String(c.v??''); }
       /* kursi dhe çmimi LEK nga formula, p.sh. =511.2/95.84 ose =G2/97.01 */
       const fe = 'wsEur' in map ? row[map.wsEur]?.f : null;
-      if(fe){ const m=String(fe).replace(/^=/,'').match(/^\s*([\d.]+|[A-Z]+\d+)\s*\/\s*([\d.]+)\s*$/i); if(m){ x.rate=+m[2]; if(/^[\d.]+$/.test(m[1])) x.wsLek=+m[1]; } }
+      if(fe && x.rate==null){ const m=String(fe).replace(/^=/,'').match(/^\s*([\d.]+|[A-Z]+\d+)\s*\/\s*([\d.]+)\s*$/i); if(m){ x.rate=+m[2]; if(/^[\d.]+$/.test(m[1])) x.wsLek=+m[1]; } }
       if(x.wsLek==null && x.wsEur) x.wsLek=null;
       if(x.rate==null && x.wsLek && x.wsEur) x.rate=x.wsLek/x.wsEur;
       if(x.wsEur==null && x.wsLek && x.rate) x.wsEur=x.wsLek/x.rate;
@@ -435,7 +435,16 @@ function parseCompMatrix(C){ /* C: rreshta me {v,f} */
       if(x.qty==null && x.comp==null) continue;
       rows.push(x);
     }
-    return rows.length ? rows : null;
+    if(!rows.length) return null;
+    /* rreshtat e fundit: p.sh. "Discount give by Trimed 2.7%" dhe "Ammount to be compensate 84,564.70" */
+    const meta={};
+    for(let r=i+1;r<C.length;r++){ const row=C[r]||[];
+      row.forEach((c,j)=>{ const s=norm(c&&c.v); if(!s) return;
+        const next=()=>{ for(let q=j+1;q<row.length;q++){ const v=toNum(row[q]?.v); if(v!=null) return v; } return null; };
+        if(/amm?ount\s*to\s*be\s*compens|shuma.*kompens|totali.*kompens/.test(s)) meta.final=next();
+        else if(/discount\s*giv|zbritje.*distribut/.test(s)) meta.extraDisc=next(); }); }
+    rows.meta=meta;
+    return rows;
   }
   return null;
 }
@@ -483,7 +492,12 @@ function crossCheck(compRows, sales, list, rates){
     R.akbpmCif=p?p.cif:null; R.rim=p?p.rim:false; R.officialRate=R.rim?rates.r:rates.n;
     if(s){ R.qty=s.qtyNet; R.wsLek=s.qtySold?s.grossSold/s.qtySold:0; R.avgDisc=s.grossNet?s.discNet/s.grossNet:0; }
     /* kontrolli i formulës me të dhënat e tyre */
-    if(g){ R.formulaComp=g.rows.reduce((a,r)=>{ const ws=(r.wsEur!=null?r.wsEur:(r.wsLek&&r.rate?r.wsLek/r.rate:null)); if(ws==null||r.disc==null||r.cifNet==null||r.qty==null) return NaN; const wn=ws*(1-r.disc); return a + wn*r.qty*0.15-(wn-r.cifNet)*r.qty; },0); }
+    if(g){ let clipped=0, fsum=0, ok=true;
+      for(const r of g.rows){ const ws=(r.wsEur!=null?r.wsEur:(r.wsLek&&r.rate?r.wsLek/r.rate:null));
+        if(ws==null||r.disc==null||r.cifNet==null||r.qty==null){ ok=false; break; }
+        const wn=ws*(1-r.disc); const f=wn*r.qty*0.15-(wn-r.cifNet)*r.qty;
+        if(f<0 && r.comp===0){ clipped+=f; fsum+=0; } else fsum+=f; }
+      R.formulaComp = ok ? fsum : NaN; R.clipped = ok ? clipped : 0; }
     /* rillogaritja: shitjet reale + kursi zyrtar + CIF Net i distributorit */
     if(s){
       const cifNet = R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
@@ -502,7 +516,8 @@ function crossCheck(compRows, sales, list, rates){
     const noComp = g && g.rows.every(r=>r.comp==null);
     if(noComp && s && !isZeroDisc(R.avgDisc)) R.issues.push(['p-info','Distributori nuk e ka kompensuar këtë produkt']);
     else if(noComp) {}
-    else if(g && R.formulaComp!=null && isFinite(R.formulaComp) && Math.abs(R.formulaComp-R.theirComp)>0.05) R.issues.push(['p-bad',`Gabim formule: me të dhënat e tyre del ${R.formulaComp.toFixed(2)}, jo ${R.theirComp.toFixed(2)}`]);
+    if(g && R.clipped<-0.005 && !(s && isZeroDisc(R.avgDisc))) R.issues.push(['p-info',`Distributori ka vënë 0 në vend të ${R.clipped.toFixed(2)} (kompensim negativ)`]);
+    if(!noComp && g && R.formulaComp!=null && isFinite(R.formulaComp) && Math.abs(R.formulaComp-R.theirComp)>0.05) R.issues.push(['p-bad',`Gabim formule: me të dhënat e tyre del ${R.formulaComp.toFixed(2)}, jo ${R.theirComp.toFixed(2)}`]);
     if(g && g.rows.some(r=>!String(r.inv||'').trim())) R.issues.push(['p-warn','Mungon nr. i faturës']);
     out.push(R);
   }
@@ -557,8 +572,8 @@ function syncHeader(){
 }
 $('dist').onchange=e=>{ ST.dist=e.target.value; renderAll(); };
 $('month').onchange=e=>{ ST.month=e.target.value; renderCalc(); };
-$('rateR').oninput=e=>{ ST.rates.r=+e.target.value||RATES_DEFAULT.r; renderCalc(); };
-$('rateN').oninput=e=>{ ST.rates.n=+e.target.value||RATES_DEFAULT.n; renderCalc(); };
+$('rateR').oninput=e=>{ ST.rates.r=+e.target.value||RATES_DEFAULT.r; renderAll(); };
+$('rateN').oninput=e=>{ ST.rates.n=+e.target.value||RATES_DEFAULT.n; renderAll(); };
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.t));
 function showTab(t){
   document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
@@ -690,6 +705,7 @@ $('btnClose').onclick=()=>{ Object.assign(ST,{mode:'prep',file:null,sales:[],sal
 
 /* ===== Shitjet ===== */
 function setSales(rows, src, note){
+  if(typeof XC!=='undefined') XC.embeddedSales='';
   ST.sales=rows; ST.salesSrc=src; ST.salesNote=note||''; ST.savedOnce=false; renderAll();
   if(!rows.length){ msg('salesMsg','',''); return; }
   msg('salesMsg','ok',`${note?esc(note)+'<br>':''}U lexuan ${rows.length} produkte. Vazhdo te <span class="link" onclick="showTab('t-xc')">Cross-check</span> ose shiko <span class="link" onclick="showTab('t-calc')">Llogaritjen</span> (€ ${fmt(LAST.total)}).`);
@@ -894,8 +910,21 @@ $('xcFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f||!
   const rd=new FileReader(); rd.onload=ev=>{ try{
     const wb=XLSX.read(ev.target.result,{type:'array',cellFormula:true});
     const found=wb.SheetNames.map(n=>[n,parseCompMatrix(sheetCells(wb.Sheets[n]))]).filter(x=>x[1]);
-    if(!found.length){ msg('xcMsg','err','Nuk u gjet tabela e kompensimit. Duhen të paktën kolonat Product, Total Monthly Sales, Cif Net (ose Cif Gross) dhe Total value to be compensated.'); return; }
+    if(!found.length){ msg('xcMsg','err','Nuk u gjet tabela e kompensimit. Duhen të paktën kolonat e produktit (Product / Artikulli), sasisë (Total Monthly Sales / Kuti), CIF Net ose CIF Gross, dhe "Total value to be compensated".'); return; }
     XC.file=f.name; XC.sheets=found; XC.sheet=found[0][0]; XC.rows=found[0][1];
+    /* muaji nga emri i fletës, p.sh. "Profit&Lost October 2026" */
+    if(!ST.month){ const M={january:1,janar:1,february:2,shkurt:2,march:3,mars:3,april:4,prill:4,may:5,maj:5,june:6,qershor:6,july:7,korrik:7,august:8,gusht:8,september:9,shtator:9,october:10,tetor:10,november:11,nentor:11,'nëntor':11,december:12,dhjetor:12};
+      const m=(XC.sheet+' '+f.name).toLowerCase().match(/(january|janar|february|shkurt|march|mars|april|prill|may|maj|june|qershor|july|korrik|august|gusht|september|shtator|october|tetor|november|n[eë]ntor|december|dhjetor)\D{0,3}(20\d\d)/);
+      if(m){ ST.month=`${m[2]}-${String(M[m[1]]).padStart(2,'0')}`; syncHeader(); } }
+    /* nëse s'ka shitje të ngarkuara dhe file-i ka edhe fletën e shitjeve, përdore atë */
+    if(!ST.sales.length){
+      for(const n of wb.SheetNames){ if(found.some(x=>x[0]===n)) continue;
+        const p=parseAny(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}));
+        if(p && p.rows.length && p.format!=='Tabelë e përmbledhur'){
+          if(p.dist && ST.dist && p.dist!==ST.dist) continue;
+          if(p.dist && !ST.dist){ ST.dist=p.dist; syncHeader(); }
+          setSales(p.rows, `${f.name} · fleta "${n}" (brenda file-it të distributorit)`, p.note); XC.embeddedSales=n; break; }
+      } }
     $('xcSheet').innerHTML=found.map(([n])=>`<option>${esc(n)}</option>`).join(''); $('xcSheetWrap').style.display=found.length>1?'':'none';
     renderXC();
   }catch(err){ msg('xcMsg','err','Gabim në leximin e file-it: '+esc(err.message)); } };
@@ -910,7 +939,10 @@ function renderXC(){
   const bad=res.rows.filter(r=>r.issues.length).length;
   $('xcTheir').textContent='€ '+fmt(res.theirTotal); $('xcOur').textContent='€ '+fmt(res.ourTotal);
   { const d=res.theirTotal-res.ourTotal; $('xcDiff').textContent=(d>=0?'+':'−')+' € '+fmt(Math.abs(d)); } $('xcBad').textContent=bad;
-  msg('xcMsg', bad?'warn':'ok', bad?`${bad} produkte kanë vërejtje.`:'Çdo produkt përputhet.');
+  const meta=XC.rows.meta||{}; let extra='';
+  if(meta.final!=null){ const ed=meta.extraDisc||0; extra=`<br>Në fund të Excel-it distributori kërkon <b>€ ${fmt(meta.final)}</b>`+(ed?` (pas zbritjes ${pct(ed)} nga totali € ${fmt(res.theirTotal)}). Me të njëjtën zbritje, rillogaritja jep <b>€ ${fmt(res.ourTotal*(1-ed))}</b>.`:'.'); }
+  if(XC.embeddedSales) extra+=`<br>Shitjet u morën nga fleta "${esc(XC.embeddedSales)}" brenda file-it të distributorit. Për një kontroll të pavarur, ngarko raportin e shitjeve te skeda "Shitjet".`;
+  msg('xcMsg', bad?'warn':'ok', (bad?`${bad} produkte kanë vërejtje.`:'Çdo produkt përputhet.')+extra);
   let h='<thead><tr><th>Produkti</th><th>Sasia Excel</th><th>Sasia raport</th><th>Çmimi LEK Excel</th><th>Çmimi LEK raport</th><th>Zbr. Excel</th><th>Zbr. raport</th><th>Kursi Excel</th><th>CIF Gross Excel</th><th>CIF 2026</th><th>CIF Net Excel</th><th>Kompensimi Excel €</th><th>Rillogaritur €</th><th>Diferenca €</th><th class="l">Vërejtje</th></tr></thead><tbody>';
   for(const r of res.rows){
     h+=`<tr><td title="${esc(r.theirNames.join(' | '))}">${esc(r.name)}</td><td>${r.theirQty??''}</td><td>${r.qty??''}</td><td>${fmt(r.theirWsLek)}</td><td>${fmt(r.wsLek)}</td><td>${pct(r.theirDisc)}</td><td>${pct(r.avgDisc)}</td><td>${r.theirRate?(+r.theirRate.toFixed(2)):''}</td><td>${fmt(r.theirCif)}</td><td>${fmt(r.akbpmCif)}</td><td>${fmt(r.theirCifNet)}</td>
