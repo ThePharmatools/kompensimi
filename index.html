@@ -543,12 +543,12 @@ function crossCheck(compRows, sales, list, rates, invs){
     /* rillogaritja: shitjet reale + kursi zyrtar + CIF Net i distributorit */
     R.inv={checked:0, bad:0};
     if(g && invs && invs.length){ const seen=new Set();
-      let nq=0, nv=0, all=true;
+      let nq=0, nv=0, nc=0, all=true;
       for(const r of g.rows){ const c=checkInvoiceRow(r, R.name, invs); if(c.status==='none'){ all=false; continue; } R.inv.checked++;
-        if(c.line && c.line.netUnit!=null && r.qty){ nq+=Math.abs(r.qty); nv+=c.line.netUnit*Math.abs(r.qty); } else all=false;
+        if(c.line && c.line.netUnit!=null && r.qty){ nq+=Math.abs(r.qty); nv+=c.line.netUnit*Math.abs(r.qty); nc+=(c.line.cif||0)*Math.abs(r.qty); } else all=false;
         if(c.status!=='ok' && c.status!=='date'){ R.inv.bad++; if(!seen.has(c.msg)){ seen.add(c.msg); R.issues.push(['p-bad',c.msg]); } }
         if(c.dateMsg){ R.inv.date=(R.inv.date||0)+1; if(!seen.has(c.dateMsg)){ seen.add(c.dateMsg); R.issues.push(['p-warn',c.dateMsg]); } } }
-      if(all && nq) R.invCifNet = nv/nq; }
+      if(nq){ R.invCif = nc/nq; if(all) R.invCifNet = nv/nq; } }
     if(s){
       const cifNet = R.invCifNet!=null ? R.invCifNet : R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
       const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourProfitPct = wn ? (wn-cifNet)/wn : 0;
@@ -564,7 +564,6 @@ function crossCheck(compRows, sales, list, rates, invs){
     if(g && s && R.theirWsLek && Math.abs(R.theirWsLek-R.wsLek)/R.wsLek>0.01) R.issues.push(['p-warn',`Çmimi: Excel ${R.theirWsLek.toFixed(2)}, raporti ${R.wsLek.toFixed(2)} LEK`]);
     if(g && s && R.theirDisc!=null && Math.abs(R.theirDisc-R.avgDisc)>0.01) R.issues.push(['p-warn',`Zbritja: Excel ${(R.theirDisc*100).toFixed(1)}%, raporti ${(R.avgDisc*100).toFixed(1)}%`]);
     if(g && R.theirRate && Math.abs(R.theirRate-R.officialRate)>0.005) R.issues.push(['p-warn',`Kursi: Excel ${+R.theirRate.toFixed(2)}, zyrtar ${R.officialRate}`]);
-    if(g && R.theirCif!=null && R.akbpmCif!=null && R.theirCif>R.akbpmCif+0.005) R.issues.push(['p-bad',`CIF ${R.theirCif} mbi CIF 2026 ${R.akbpmCif}`]);
     const noComp = g && g.rows.every(r=>r.comp==null);
     if(noComp && s && !isZeroDisc(R.avgDisc)) R.issues.push(['p-info','Distributori nuk e ka kompensuar këtë produkt']);
     else if(noComp) {}
@@ -1081,9 +1080,9 @@ function renderXC(){
       : !invs.length ? `<br>Nuk ka fatura për ${esc(ST.dist||'këtë distributor')} te skeda Faturat.`
       : `<br>Faturat: u kontrolluan ${ch} rreshta. ${bd?`<b>${bd} me mospërputhje</b> në nr. fature, CIF, zbritje ose CIF Net`:'Nr. fature, CIF, zbritja dhe CIF Net përputhen'}.`; }
   msg('xcMsg', bad?'warn':'ok', (bad?`${bad} produkte kanë vërejtje.`:'Çdo produkt përputhet.')+extra);
-  let h='<thead><tr><th>Produkti</th><th>Sasia Excel</th><th>Sasia raport</th><th>Çmimi LEK Excel</th><th>Çmimi LEK raport</th><th>Zbr. Excel</th><th>Zbr. raport</th><th>Kursi Excel</th><th>CIF Gross Excel</th><th>CIF 2026</th><th>CIF Net Excel</th><th>Fatura</th><th>Kompensimi Excel €</th><th>Rillogaritur €</th><th>Diferenca €</th><th class="l">Vërejtje</th></tr></thead><tbody>';
+  let h='<thead><tr><th>Produkti</th><th>Sasia Excel</th><th>Sasia raport</th><th>Çmimi LEK Excel</th><th>Çmimi LEK raport</th><th>Zbr. Excel</th><th>Zbr. raport</th><th>Kursi Excel</th><th>CIF Gross Excel</th><th>CIF faturë</th><th>CIF Net Excel</th><th>Fatura</th><th>Kompensimi Excel €</th><th>Rillogaritur €</th><th>Diferenca €</th><th class="l">Vërejtje</th></tr></thead><tbody>';
   for(const r of res.rows){
-    h+=`<tr><td title="${esc(r.theirNames.join(' | '))}">${esc(r.name)}</td><td>${r.theirQty??''}</td><td>${r.qty??''}</td><td>${fmt(r.theirWsLek)}</td><td>${fmt(r.wsLek)}</td><td>${pct(r.theirDisc)}</td><td>${pct(r.avgDisc)}</td><td>${r.theirRate?(+r.theirRate.toFixed(2)):''}</td><td>${fmt(r.theirCif)}</td><td>${fmt(r.akbpmCif)}</td><td>${fmt(r.theirCifNet)}${r.invCifNet!=null && r.theirCifNet!=null && Math.abs(r.invCifNet-r.theirCifNet)>=0.005?`<br><span class="neg" title="CIF Net sipas faturës">faturë ${fmt(r.invCifNet,3)}</span>`:''}</td><td>${!r.inv||!r.inv.checked?'<span class="note">–</span>':r.inv.bad?`<span class="pill p-bad">✗ ${r.inv.bad}/${r.inv.checked}</span>`:'<span class="pill p-ok">✓</span>'}</td>
+    h+=`<tr><td title="${esc(r.theirNames.join(' | '))}">${esc(r.name)}</td><td>${r.theirQty??''}</td><td>${r.qty??''}</td><td>${fmt(r.theirWsLek)}</td><td>${fmt(r.wsLek)}</td><td>${pct(r.theirDisc)}</td><td>${pct(r.avgDisc)}</td><td>${r.theirRate?(+r.theirRate.toFixed(2)):''}</td><td>${fmt(r.theirCif)}</td><td>${r.invCif!=null?fmt(r.invCif):'<span class="note">–</span>'}</td><td>${fmt(r.theirCifNet)}${r.invCifNet!=null && r.theirCifNet!=null && Math.abs(r.invCifNet-r.theirCifNet)>=0.005?`<br><span class="neg" title="CIF Net sipas faturës">faturë ${fmt(r.invCifNet,3)}</span>`:''}</td><td>${!r.inv||!r.inv.checked?'<span class="note">–</span>':r.inv.bad?`<span class="pill p-bad">✗ ${r.inv.bad}/${r.inv.checked}</span>`:'<span class="pill p-ok">✓</span>'}</td>
       <td${cls(r.theirComp)}>${fmt(r.theirComp)}</td><td${cls(r.ourComp)}>${fmt(r.ourComp)}</td><td${cls(r.diff)}><b>${Math.abs(r.diff)>=0.01?(r.diff>0?'+':'')+fmt(r.diff):''}</b></td>
       <td class="l">${r.issues.map(([c,t])=>`<span class="pill ${c}">${esc(t)}</span>`).join(' ')||'<span class="pill p-ok">OK</span>'}</td></tr>`;
   }
@@ -1092,9 +1091,9 @@ function renderXC(){
 }
 $('xcExport').onclick=()=>{
   if(!XC.res||!needXlsx()) return;
-  const H=['Produkti','Emri në Excel','Sasia Excel','Sasia raport','Çmimi LEK Excel','Çmimi LEK raport','Zbritja Excel','Zbritja raport','Kursi Excel','Kursi zyrtar','CIF Gross Excel','CIF 2026','CIF Net Excel','Fatura','Kompensimi Excel €','Rillogaritur €','Diferenca €','Vërejtje'];
+  const H=['Produkti','Emri në Excel','Sasia Excel','Sasia raport','Çmimi LEK Excel','Çmimi LEK raport','Zbritja Excel','Zbritja raport','Kursi Excel','Kursi zyrtar','CIF Gross Excel','CIF faturë','CIF Net Excel','Fatura','Kompensimi Excel €','Rillogaritur €','Diferenca €','Vërejtje'];
   const data=[[`Cross-check kompensimi – ${ST.dist||''} · ${monthLabel(ST.month)}`],[`Excel: ${XC.file} · Raporti: ${ST.salesSrc}`],[],H,
-    ...XC.res.rows.map(r=>[r.name,r.theirNames.join(' | '),r.theirQty,r.qty,rnd(r.theirWsLek,2),rnd(r.wsLek,2),rnd(r.theirDisc),rnd(r.avgDisc),r.theirRate?rnd(r.theirRate):null,r.officialRate,r.theirCif,r.akbpmCif,rnd(r.theirCifNet),r.inv&&r.inv.checked?(r.inv.bad?`✗ ${r.inv.bad}/${r.inv.checked}`:'✓'):'',rnd(r.theirComp,2),rnd(r.ourComp,2),rnd(r.diff,2),r.issues.map(x=>x[1]).join('; ')]),
+    ...XC.res.rows.map(r=>[r.name,r.theirNames.join(' | '),r.theirQty,r.qty,rnd(r.theirWsLek,2),rnd(r.wsLek,2),rnd(r.theirDisc),rnd(r.avgDisc),r.theirRate?rnd(r.theirRate):null,r.officialRate,r.theirCif,r.invCif!=null?rnd(r.invCif):null,rnd(r.theirCifNet),r.inv&&r.inv.checked?(r.inv.bad?`✗ ${r.inv.bad}/${r.inv.checked}`:'✓'):'',rnd(r.theirComp,2),rnd(r.ourComp,2),rnd(r.diff,2),r.issues.map(x=>x[1]).join('; ')]),
     ['TOTALI',...Array(13).fill(null),rnd(XC.res.theirTotal,2),rnd(XC.res.ourTotal,2),rnd(XC.res.theirTotal-XC.res.ourTotal,2)]];
   const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(data); ws['!cols']=[{wch:42},{wch:40},...H.slice(2).map(()=>({wch:13}))];
   XLSX.utils.book_append_sheet(wb,ws,'Cross-check'); XLSX.writeFile(wb,`CrossCheck_${ST.dist||'distributori'}_${ST.month||'muaji'}.xlsx`);
