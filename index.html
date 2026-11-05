@@ -37,6 +37,8 @@ section.tab{display:none}section.tab.on{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
 .card h2{font-size:15px;margin:0 0 10px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi input.xd{width:5.2em;font:inherit;font-size:.95em;padding:2px 6px;border:1px solid #c7d2e0;border-radius:6px;text-align:right;background:#fffbea}
+.kpi.extra .note{margin-top:2px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
 .kpi .l{font-size:12px;color:var(--muted)}
 .kpi .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
@@ -132,8 +134,10 @@ tr.excl td{color:var(--muted)}
  <div id="xcOut" style="display:none">
   <div class="kpis">
    <div class="kpi"><div class="l">Totali sipas distributorit</div><div class="v" id="xcTheir">–</div></div>
-   <div class="kpi main"><div class="l">Rillogaritur me shitjet</div><div class="v" id="xcOur">–</div></div>
-   <div class="kpi"><div class="l">Diferenca (distributori − rillogaritur)</div><div class="v" id="xcDiff">–</div></div>
+   <div class="kpi"><div class="l">Rillogaritur me shitjet</div><div class="v" id="xcOur">–</div></div>
+   <div class="kpi extra"><div class="l">Zbritje mesatare shtesë</div><div class="v"><input type="number" class="xd" id="xcExtra" min="0" max="100" step="0.01" placeholder="0"> %</div><div class="note" id="xcExtraEur"></div></div>
+   <div class="kpi main"><div class="l">Rillogaritur pas zbritjes</div><div class="v" id="xcFinal">–</div></div>
+   <div class="kpi"><div class="l">Diferenca (distributori − rillogaritur pas zbritjes)</div><div class="v" id="xcDiff">–</div></div>
    <div class="kpi"><div class="l">Produkte me vërejtje</div><div class="v" id="xcBad">–</div></div>
   </div>
   <div class="card">
@@ -191,6 +195,8 @@ tr.excl td{color:var(--muted)}
  </div>
  <div class="print-only"><h2 id="printTitle"></h2></div>
  <div class="kpis">
+  <div class="kpi"><div class="l">Totali i llogaritur</div><div class="v" id="kGross">–</div></div>
+  <div class="kpi extra"><div class="l">Zbritje mesatare shtesë</div><div class="v"><input type="number" class="xd" id="kExtra" min="0" max="100" step="0.01" placeholder="0"> %</div><div class="note" id="kExtraEur"></div></div>
   <div class="kpi main"><div class="l">Totali për kompensim</div><div class="v" id="kTotal">–</div></div>
   <div class="kpi"><div class="l">Produkte që kompensohen</div><div class="v" id="kCount">–</div></div>
   <div class="kpi"><div class="l">Nuk kompensohen</div><div class="v" id="kSkip">–</div></div>
@@ -663,7 +669,7 @@ const DISTS = ['Asgeto','Trimed','Intermed'];
 const SAMPLE = { dist:'Asgeto', month:'2026-07', label:'Shembull: shitjet e Asgeto, Korrik 2026', rows: [["Citoles Oral Drops 10mg/ml 15ml-Abdiibrahim", 2, 106, 106, 62752, 62752, 30192.12, 592, 592], ["Coriva 18mcg INH X 30caps + 1 pompe - Abdiibrahim", 1, 11, 11, 9354.4, 9354.4, 841.9, 850.4, 850.4], ["Demax 10mgx30tab - Abdiibrahim", 17, 82, 94, 202306.8, 176480.4, 33709.47, 2152.2, 2152.2], ["Ecopirin Pro 81 mg x 30 tabs - Abdiibrahim", 29, 766, 771, 104316.3, 103639.8, 39237, 135.3, 135.3], ["Epixx 500 mg x 50 tabs - Abdiibrahim", 40, 668, 668, 205076, 205076, 14421.48, 307, 307], ["Epixx Oral Solution 100mg/ml x 300ml- Abdiibrahim", 3, 26, 26, 21276.32, 21276.32, 817.99, 818.32, 818.32], ["Epixx XR 500 mg x 50 tabs - Abdiibrahim", 21, 212, 214, 131289, 130062, 8030.47, 613.5, 613.5], ["Fixdual 5mg/10mg x 30 tabs - Abdiibrahim", 21, 224, 224, 362280.8, 362280.8, 119784.17, 1615.2, 1643.2], ["Galviks Advance 1000mg+200mg/10ml x 200ml-Abdiibrahim", 6, 22, 26, 13998.4, 11844.8, 3206.17, 538.4, 538.4], ["Moxai 400 mg x 7 tabs - Abdiibrahim", 5, 62, 62, 44193.6, 44193.6, 19245.6, 712.8, 712.8], ["Nexivol 5 mg x 28 tabs - Abdiibrahim", 8, 577, 577, 144273.08, 144273.08, 56069.47, 250.04, 250.04], ["ONCEAIR Pediatric 4mg x 28 bustina - Abdiibrahim", 1, 20, 20, 14704, 14704, 11028, 735.2, 735.2], ["OnceAir 10 mg x 28 tabs - Abdiibrahim", 1, 20, 20, 14544, 14544, 10908, 727.2, 727.2], ["OnceAir 4 mg x 28 tabs - Abdiibrahim", 1, 20, 20, 14704, 14704, 11028, 735.2, 735.2], ["OnceAir 5 mg x 28 tabs - Abdiibrahim", 1, 20, 20, 14336, 14336, 10752, 716.8, 716.8], ["Ornisid Fort 500 mg x 10 tabs - Abdiibrahim", 2, 2, 2, 1723.2, 1723.2, 0, 861.6, 861.6], ["Posagil 100 mg x 24 tabs - Abdiibrahim", 7, -11, 6, 49099.68, -93908.4, -18591.05, 8183.28, 8183.28], ["Protonex 40mg x 28 tab AbdiIbrahim", 9, 53, 214, 154764.8, 38329.6, 8542.81, 723.2, 723.2], ["Rebone 70 mg + 2800 I.U x 4 tabs -Abdiibrahim", 30, 539, 539, 374906.84, 374906.84, 47614.12, 695.56, 695.56], ["Rexapin 10 mg x 28 tabs - Abdiibrahim", 5, 126, 126, 45087.84, 45087.84, 10664.35, 357.84, 357.84], ["Risonel 5% Nasal Spray x 18 gr - Abdiibrahim", 26, 163, 163, 74980, 74980, 7820.35, 460, 460], ["Rivoksar 10 mg x 10 tabs - Abdiibrahim", 2, 110, 110, 26257, 26257, 8751.46, 238.7, 238.7], ["Rivoksar 15 mg x 28 tabs - Abdiibrahim", 25, 423, 423, 250974.36, 250974.36, 75741.65, 593.32, 593.32], ["Rivoksar 20 mg x 28 tabs - Abdiibrahim", 56, 1503, 1540, 913712.8, 891759.96, 288249.39, 593.32, 593.32], ["Stage 10 mg x 28 tabs - Abdiibrahim", 12, 114, 119, 59595.2, 57091.2, 22157.1, 500.8, 500.8], ["Stage 20 mg x 28 tabs - Abdiibrahim", 13, 86, 86, 64052.8, 64052.8, 17501.98, 744.8, 744.8], ["Tanflex ColdAway x 24 tabs - Abdiibrahim", 2, 131, 131, 36156, 36156, 17387.31, 276, 276], ["Tanflex Oral Spray 15% x 30 ml - Abdiibrahim", 11, 484, 484, 168819.2, 168819.2, 80555.37, 348.8, 348.8], ["Tanflex Plus 0.15% / 0.12% x 30ml AbdiIbrahim", 1, 2, 2, 710.4, 710.4, 0, 355.2, 355.2], ["Tarden 20 mg x 30 tabs - Abdiibrahim", 16, 817, 897, 107640, 98040, 35040, 120, 120], ["Tenoviral 245 mg x 30 tabs - Abdiibrahim", 30, 286, 291, 140727.6, 138309.6, 0, 483.6, 483.6], ["Tensart 16 mg x 28 tabs - Abdiibrahim", 27, 302, 313, 179924.92, 173601.68, 14628.73, 574.84, 574.84], ["Tensart 32mg x 28tab AbdiIbrahim", 12, 71, 71, 40813.64, 40813.64, 2873.91, 574.84, 574.84], ["Tensart Plus 16mg/12.5mg x 28 tab AbdiIbrahim", 13, 78, 78, 49732.8, 49732.8, 3825.24, 637.6, 637.6], ["Tilanta 90 mg x 56 tabs - Abdiibrahim", 16, 109, 109, 255583.2, 255583.2, 18756.54, 2344.8, 2344.8], ["Tyoflex 8 mg x 14 caps - Abdiibrahim", 13, 339, 339, 260080.8, 260080.8, 108941.93, 767.2, 767.2], ["Vasoserc Forte 16mg x 30tabs- Abdiibrahim", 16, 140, 145, 31900, 30800, 7825.05, 220, 220], ["YOUPLUS Energy Vitamin & Mineral Ginseng x 30 tabs-Abdiibrahim", 2, 7, 7, 11200, 11200, 3729.6, 1600, 1600], ["YOUPLUS Kids Highdose Omega 3 x 150ml-Abdiibrahim", 8, 31, 31, 53732.3, 53732.3, 16720.27, 1733.3, 1733.3], ["YOUPLUS Kids VM Multivitamin Mineral Complex x 150ml-Abdiibrahim", 11, 40, 40, 32000, 32000, 9077.2, 800, 800], ["YOUPLUS Omega3 Fish Oil x 30caps-Abdiibrahim", 12, 46, 46, 61331.8, 61331.8, 17863.55, 1333.3, 1333.3], ["YOUPLUS PRO Vitamin C, Zinc, Propolis x 15tab eff -Abdiibrahim", 14, 90, 104, 90133.68, 78000.3, 24216.5, 866.67, 866.67], ["YOUPLUS Vitamin D3 K2 x 20ml-Abdiibrahim", 24, 120, 120, 135996, 135996, 35339.69, 1133.3, 1133.3]] };
 
 /* ===== Gjendja vetëm në memorie (asgjë nuk ruhet) ===== */
-const ST = { dist:'', month:'', rates:{...RATES_DEFAULT}, sales:[], salesSrc:'', mode:'prep', file:null, prev:null };
+const ST = { extra:0, extraSet:false, dist:'', month:'', rates:{...RATES_DEFAULT}, sales:[], salesSrc:'', mode:'prep', file:null, prev:null };
 
 const $ = id => document.getElementById(id);
 const fmt = (v,d=2) => (v==null||!isFinite(v)) ? '' : v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -690,6 +696,8 @@ function syncHeader(){
 }
 $('dist').onchange=e=>{ ST.dist=e.target.value; renderAll(); };
 $('month').onchange=e=>{ ST.month=e.target.value; renderCalc(); };
+const setExtra=v=>{ const n=parseFloat(String(v).replace(',','.')); ST.extra = isFinite(n)&&n>0 ? Math.min(n,100)/100 : 0; ST.extraSet=true; renderAll(); };
+$('kExtra').oninput=e=>setExtra(e.target.value); $('xcExtra').oninput=e=>setExtra(e.target.value);
 $('rateR').oninput=e=>{ ST.rates.r=+e.target.value||RATES_DEFAULT.r; renderAll(); };
 $('rateN').oninput=e=>{ ST.rates.n=+e.target.value||RATES_DEFAULT.n; renderAll(); };
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.t));
@@ -706,7 +714,11 @@ function renderCalc(){
   const res = calculate(products(), ST.sales, ST.rates); LAST=res;
   const has = ST.sales.length>0;
   $('printTitle').textContent = `Kompensimi Abdi Ibrahim – ${ST.dist} · ${monthLabel(ST.month)}`;
-  $('kTotal').textContent = has ? '€ '+fmt(res.total) : '–';
+  res.final = res.total*(1-ST.extra); res.extraEur = res.total-res.final;
+  $('kGross').textContent = has ? '€ '+fmt(res.total) : '–';
+  $('kTotal').textContent = has ? '€ '+fmt(res.final) : '–';
+  if(document.activeElement!==$('kExtra')) $('kExtra').value = ST.extra ? +(ST.extra*100).toFixed(4) : '';
+  $('kExtraEur').textContent = has && ST.extra ? '− € '+fmt(res.extraEur) : 'zbritet nga totali';
   $('kCount').textContent = has ? res.rows.filter(r=>r.status==='ok').length : '–';
   $('kSkip').textContent = has ? res.rows.filter(r=>r.status!=='ok'&&r.status!=='nosale').length : '–';
   msg('calcMsg','warn', has ? '' : 'Nuk ka shitje. Shko te <b>Shitjet</b> për t\'i ngarkuar.');
@@ -763,6 +775,8 @@ function buildWorkbook(meta){
   for(const r of res.rows){ const ok=r.status==='ok';
     data.push([r.name,r.cif,r.disc,rnd(r.cifNet),r.rim?'Po':'Jo',r.rate,rnd(r.wsLek),r.qtyNet??null,rnd(r.wsEur),rnd(r.avgDisc),rnd(r.wsNet),ok?rnd(r.profit):null,ok?rnd(r.pct):null,ok?rnd(r.pl,2):null,ok?rnd(r.p15box):null,ok?rnd(r.p15val,2):null,ok?rnd(r.comp,2):null,STATUS_LONG[r.status]]); }
   const tot=['TOTALI']; tot[16]=rnd(res.total,2); data.push(tot);
+  if(ST.extra){ const z=['Zbritje mesatare shtesë '+rnd(ST.extra*100,2)+'%']; z[16]=-rnd(res.total*ST.extra,2); data.push(z);
+    const f=['TOTALI PËR KOMPENSIM (pas zbritjes)']; f[16]=rnd(res.total*(1-ST.extra),2); data.push(f); }
   if(meta.prepNote) data.push([],['Shënim nga distributori',meta.prepNote]);
   const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(data);
   ws['!cols']=[{wch:48},...H.slice(1).map(()=>({wch:13}))];
@@ -780,7 +794,7 @@ $('btnSave').onclick=()=>{
   if(!needXlsx()) return;
   if(!ST.month){ alert('Zgjidh muajin lart.'); $('month').focus(); return; }
   if(!ST.dist){ alert('Zgjidh distributorin tënd lart.'); $('dist').focus(); return; }
-  const meta={ v:1, status:'derguar', dist:ST.dist, month:ST.month, total:rnd(LAST.total,2), prepBy:ST.dist, prepNote:$('prepNote').value.trim(), prepAt:Date.now() };
+  const meta={ v:1, status:'derguar', dist:ST.dist, month:ST.month, total:rnd(LAST.total*(1-ST.extra),2), totalBefore:rnd(LAST.total,2), extra:ST.extra, prepBy:ST.dist, prepNote:$('prepNote').value.trim(), prepAt:Date.now() };
   XLSX.writeFile(buildWorkbook(meta), fileName(meta,''));
   ST.savedOnce=true;
   msg('calcMsg','ok',`U shkarkua <b>${fileName(meta,'')}</b>. Dërgoje te Abdi Ibrahim për miratim.`);
@@ -802,7 +816,7 @@ $('btnOpen').onclick=()=>$('openFile').click();
 $('openFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   readSavedFile(f, d=>{
     if(!DISTS.includes(d.dist)){ alert('Distributor i panjohur: '+d.dist); return; }
-    Object.assign(ST,{ mode:'review', file:d, dist:d.dist, month:d.month, rates:{...d.rates}, sales:d.sales, salesSrc:`${f.name}` });
+    Object.assign(ST,{ mode:'review', file:d, dist:d.dist, month:d.month, rates:{...d.rates}, sales:d.sales, salesSrc:`${f.name}`, extra:+d.extra||0, extraSet:true });
     $('apBy').value=d.apBy||''; $('apDate').value=d.apDate||new Date().toISOString().slice(0,10); $('apNote').value=d.apNote||'';
     syncHeader(); renderAll(); showTab('t-calc'); window.scrollTo(0,0);
   });
@@ -811,7 +825,7 @@ function decide(status){
   if(!needXlsx()) return;
   const by=$('apBy').value.trim(); if(!by){ alert('Shkruaj emrin te "Miratoi".'); $('apBy').focus(); return; }
   if(status==='kthyer' && !$('apNote').value.trim()){ alert('Shkruaj vërejtjet te "Shënime".'); $('apNote').focus(); return; }
-  const meta={...ST.file, status, total:rnd(LAST.total,2), apBy:by, apDate:$('apDate').value, apNote:$('apNote').value.trim(), apAt:Date.now()};
+  const meta={...ST.file, status, total:rnd(LAST.total*(1-ST.extra),2), totalBefore:rnd(LAST.total,2), extra:ST.extra, apBy:by, apDate:$('apDate').value, apNote:$('apNote').value.trim(), apAt:Date.now()};
   delete meta.rates; delete meta.sales; delete meta.salesSrc;
   ST.file={...ST.file,...meta};
   XLSX.writeFile(buildWorkbook(meta), fileName(meta, status==='miratuar'?'_MIRATUAR':'_KTHYER'));
@@ -1076,8 +1090,13 @@ function renderXC(){
     const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0]; if(best && DISTS.includes(best[0])){ ST.dist=best[0]; syncHeader(); } }
   const invs=invsFor(ST.dist); const res=crossCheck(XC.rows, ST.sales, products(), ST.rates, invs); XC.res=res; $('xcOut').style.display='';
   const bad=res.rows.filter(r=>r.issues.length).length;
-  $('xcTheir').textContent='€ '+fmt(res.theirTotal); $('xcOur').textContent='€ '+fmt(res.ourTotal);
-  { const d=res.theirTotal-res.ourTotal; $('xcDiff').textContent=(d>=0?'+':'−')+' € '+fmt(Math.abs(d)); } $('xcBad').textContent=bad;
+  if(!ST.extraSet && XC.rows.meta && XC.rows.meta.extraDisc){ const e=+XC.rows.meta.extraDisc; ST.extra = e>1 ? e/100 : e; }
+  res.final=res.ourTotal*(1-ST.extra);
+  $('xcTheir').textContent='€ '+fmt(XC.rows.meta && XC.rows.meta.final!=null ? XC.rows.meta.final : res.theirTotal); $('xcOur').textContent='€ '+fmt(res.ourTotal);
+  $('xcFinal').textContent='€ '+fmt(res.final);
+  if(document.activeElement!==$('xcExtra')) $('xcExtra').value = ST.extra ? +(ST.extra*100).toFixed(4) : '';
+  $('xcExtraEur').textContent = ST.extra ? '− € '+fmt(res.ourTotal-res.final) : 'zbritet nga totali';
+  { const d=(XC.rows.meta && XC.rows.meta.final!=null ? XC.rows.meta.final : res.theirTotal)-res.final; $('xcDiff').textContent=(d>=0?'+':'−')+' € '+fmt(Math.abs(d)); } $('xcBad').textContent=bad;
   const meta=XC.rows.meta||{}; let extra='';
   if(meta.final!=null){ const ed=meta.extraDisc||0; extra=`<br>Në fund të Excel-it distributori kërkon <b>€ ${fmt(meta.final)}</b>`+(ed?` (pas zbritjes ${pct(ed)} nga totali € ${fmt(res.theirTotal)}). Me të njëjtën zbritje, rillogaritja jep <b>€ ${fmt(res.ourTotal*(1-ed))}</b>.`:'.'); }
   if(XC.embeddedSales) extra+=`<br>Shitjet u morën nga fleta "${esc(XC.embeddedSales)}" brenda file-it të distributorit. Për një kontroll të pavarur, ngarko raportin e shitjeve te skeda "Shitjet".`;
@@ -1100,7 +1119,9 @@ $('xcExport').onclick=()=>{
   const H=['Produkti','Emri në Excel','Sasia Excel','Sasia raport','Çmimi LEK Excel','Çmimi LEK raport','Zbritja Excel','Zbritja raport','Kursi Excel','Kursi zyrtar','CIF Gross Excel','CIF sipas faturës HQ','CIF Net Excel','Fatura','Kompensimi Excel €','Rillogaritur €','Diferenca €','Vërejtje'];
   const data=[[`Cross-check kompensimi – ${ST.dist||''} · ${monthLabel(ST.month)}`],[`Excel: ${XC.file} · Raporti: ${ST.salesSrc}`],[],H,
     ...XC.res.rows.map(r=>[r.name,r.theirNames.join(' | '),r.theirQty,r.qty,rnd(r.theirWsLek,2),rnd(r.wsLek,2),rnd(r.theirDisc),rnd(r.avgDisc),r.theirRate?rnd(r.theirRate):null,r.officialRate,r.theirCif,r.invCif!=null?rnd(r.invCif):null,rnd(r.theirCifNet),r.inv&&r.inv.checked?(r.inv.bad?`✗ ${r.inv.bad}/${r.inv.checked}`:'✓'):'',rnd(r.theirComp,2),rnd(r.ourComp,2),rnd(r.diff,2),r.issues.map(x=>x[1]).join('; ')]),
-    ['TOTALI',...Array(13).fill(null),rnd(XC.res.theirTotal,2),rnd(XC.res.ourTotal,2),rnd(XC.res.theirTotal-XC.res.ourTotal,2)]];
+    ['TOTALI',...Array(13).fill(null),rnd(XC.res.theirTotal,2),rnd(XC.res.ourTotal,2),rnd(XC.res.theirTotal-XC.res.ourTotal,2)],
+    ...(ST.extra?[['Zbritje mesatare shtesë '+rnd(ST.extra*100,2)+'%',...Array(13).fill(null),XC.rows.meta&&XC.rows.meta.final!=null?rnd(XC.res.theirTotal-XC.rows.meta.final,2):null,-rnd(XC.res.ourTotal*ST.extra,2)],
+      ['TOTALI PAS ZBRITJES',...Array(13).fill(null),XC.rows.meta&&XC.rows.meta.final!=null?rnd(XC.rows.meta.final,2):null,rnd(XC.res.final,2),XC.rows.meta&&XC.rows.meta.final!=null?rnd(XC.rows.meta.final-XC.res.final,2):null]]:[])];
   const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(data); ws['!cols']=[{wch:42},{wch:40},...H.slice(2).map(()=>({wch:13}))];
   XLSX.utils.book_append_sheet(wb,ws,'Cross-check'); XLSX.writeFile(wb,`CrossCheck_${ST.dist||'distributori'}_${ST.month||'muaji'}.xlsx`);
 };
