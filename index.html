@@ -550,6 +550,11 @@ function crossCheck(compRows, sales, list, rates, invs){
         if(c.dateMsg){ R.inv.date=(R.inv.date||0)+1; if(!seen.has(c.dateMsg)){ seen.add(c.dateMsg); R.issues.push(['p-warn',c.dateMsg]); } } }
       if(nq){ R.invCif = nc/nq; if(all) R.invCifNet = nv/nq; } }
     if(s){
+      /* produkt që mungon në Excel-in e distributorit: CIF Net merret nga fatura e fundit HQ e këtij produkti, jo nga lista 2026 */
+      if(!g && R.invCifNet==null && invs && invs.length){
+        const L=invs.filter(x=>x.prod===k && x.netUnit!=null).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0];
+        if(L){ R.invCifNet=L.netUnit; R.invCif=L.cif; R.fallbackNote=`CIF Net ${L.netUnit.toFixed(3)} nga fatura e fundit ${L.inv}${L.date?' ('+String(L.date).slice(0,10).split('-').reverse().join('.')+')':''}, zbritja ${(L.discPct*100).toFixed(0)}%`; } }
+      if(!g && R.invCifNet==null && p) R.fallbackNote=`CIF Net nga lista 2026 (${p.cif} − ${(p.disc*100).toFixed(0)}%), nuk u gjet faturë`;
       const cifNet = R.invCifNet!=null ? R.invCifNet : R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
       const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourProfitPct = wn ? (wn-cifNet)/wn : 0;
       R.ourComp = (isZeroDisc(R.avgDisc) || R.ourProfitPct>=MAX_PROFIT-1e-9) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
@@ -559,6 +564,7 @@ function crossCheck(compRows, sales, list, rates, invs){
     R.diff=(R.theirComp||0)-(R.ourComp||0);
     /* vërejtjet */
     if(!g) R.issues.push(['p-bad','Ka shitje, por mungon në Excel-in e distributorit']);
+    if(!g && R.fallbackNote) R.issues.push(['p-warn',R.fallbackNote]);
     if(g && !s) R.issues.push(['p-bad','Në Excel, por nuk ka shitje në raport']);
     if(g && s && q!==R.qty) R.issues.push(['p-bad',`Sasia: Excel ${q}, raporti ${R.qty}`]);
     if(g && s && R.theirWsLek && Math.abs(R.theirWsLek-R.wsLek)/R.wsLek>0.01) R.issues.push(['p-warn',`Çmimi: Excel ${R.theirWsLek.toFixed(2)}, raporti ${R.wsLek.toFixed(2)} LEK`]);
