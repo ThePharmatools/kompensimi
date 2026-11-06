@@ -1141,18 +1141,30 @@ function distColor(d){ if(DIST_COLORS[d]) return DIST_COLORS[d]; const o=[...new
 function addInvoiceFiles(fileList){
   const files=[...(fileList||[])]; /* kopje: FileList zbrazet kur pastrohet input-i */
   if(!files.length || !needXlsx()) return;
-  let done=0, added=0, dup=0, bad=[];
+  let done=0, added=0, dup=0, bad=[], routed=[];
   const keys=new Set(INV.rows.map(invKey));
   files.forEach(f=>{ const rd=new FileReader(); rd.onload=e=>{ try{
       const wb=XLSX.read(e.target.result,{type:'array'});
       let rows=null; for(const n of wb.SheetNames){ rows=parseInvoices(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}), products()); if(rows) break; }
-      if(!rows) bad.push(f.name);
+      if(!rows){ /* nuk është fatura: ndoshta raporti i shitjeve ose file-i i kompensimit */
+        const order=[...wb.SheetNames].sort((a,b)=>(/sales|shitje|export/i.test(b))-(/sales|shitje|export/i.test(a)));
+        if(wb.SheetNames.some(n=>parseCompMatrix(sheetCells(wb.Sheets[n])))){ loadCompWorkbook(wb, f.name); routed.push(['xc',f.name]); }
+        else if(order.some(n=>{ const p=parseAny(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})); return p&&p.rows.length; })){
+          if(handleSheets(order.map(n=>[n,XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})]), f.name)) routed.push(['sales',f.name]); else routed.push(['salesErr',f.name]); }
+        else bad.push(f.name); }
       else { for(const x of rows){ const k=invKey(x); if(keys.has(k)){ dup++; continue; } keys.add(k); INV.rows.push(x); added++; } INV.files.push({name:f.name, at:new Date().toISOString().slice(0,10), rows:rows.length}); }
     }catch(err){ bad.push(f.name+' ('+err.message+')'); }
     if(++done===files.length){
       INV.updated=new Date().toISOString(); const ok=saveInv();
       msg('invMsg', bad.length?'warn':'ok', `U shtuan ${added} rreshta faturash`+(dup?`, ${dup} ishin ngarkuar më parë dhe u anashkaluan`:'')+'.'+(bad.length?`<br>Nuk u lexua: ${bad.map(esc).join(', ')}. Duhen kolonat Invoice No, Invoice Date, Material/Description, Qty, CIF Price, Net Amount.`:'')+(ok?'':'<br>Shfletuesi nuk lejoi ruajtjen; të dhënat vlejnë vetëm sa është e hapur faqja.'));
       renderInv(); renderXC();
+      if(routed.length){ const s=routed.filter(r=>r[0]==='sales'), x=routed.filter(r=>r[0]==='xc'), se=routed.filter(r=>r[0]==='salesErr');
+        const parts=[]; if(s.length) parts.push(`${s.map(r=>'<b>'+esc(r[1])+'</b>').join(', ')} është raport shitjesh dhe u ngarkua te <span class="link" onclick="showTab('t-sales')">Shitjet</span> (${ST.sales.length} produkte, € ${fmt(LAST.total)}).`);
+        if(x.length) parts.push(`${x.map(r=>'<b>'+esc(r[1])+'</b>').join(', ')} është file kompensimi dhe u hap te <span class="link" onclick="showTab('t-xc')">Cross-check</span>.`);
+        if(se.length) parts.push(`${se.map(r=>'<b>'+esc(r[1])+'</b>').join(', ')} është raport shitjesh, por nuk u ngarkua: shiko mesazhin te <span class="link" onclick="showTab('t-sales')">Shitjet</span> (zgjidh distributorin lart).`);
+        if(!added && !bad.length && !dup) msg('invMsg', se.length?'warn':'ok', parts.join('<br>'));
+        else $('invMsg').insertAdjacentHTML('beforeend', '<div class="msg ok" style="margin-top:6px">'+parts.join('<br>')+'</div>');
+        if(!added && !dup && !bad.length && (s.length||x.length)) showTab(s.length?'t-sales':'t-xc'); }
     } }; rd.readAsArrayBuffer(f); });
 }
 $('invFile').onchange=e=>{ addInvoiceFiles(e.target.files); e.target.value=''; };
