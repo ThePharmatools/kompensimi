@@ -317,7 +317,7 @@ function calcRow(p, s, rates){
   if(!s){ r.status='nosale'; r.comp=0; return r; }
   r.qtyNet = +s.qtyNet; r.qtySold = +s.qtySold;
   r.netLek = r.qtyNet ? ((+s.grossNet)-(+s.discNet))/r.qtyNet : null; /* çmimi net për 1 kuti nga raporti */
-  r.wsLek = r.qtySold ? (+s.grossSold)/r.qtySold : 0;
+  r.wsLek = s.price!=null && +s.price>0 ? +s.price : r.qtySold ? (+s.grossSold)/r.qtySold : 0; /* çmimi fiks për 1 kuti nga raporti */
   r.wsEur = r.wsLek / r.rate;
   r.avgDisc = (+s.grossNet) ? (+s.discNet)/(+s.grossNet) : 0;
   if(!isFinite(r.avgDisc)) r.avgDisc = 0;
@@ -340,7 +340,8 @@ function calcRow(p, s, rates){
 function calculate(products, sales, rates){
   /* 1) emri i njohur ose kodi SAP, 2) markë + doza; disa emra për të njëjtin produkt bashkohen */
   const agg=new Map(), outside=[];
-  const add=(i,s)=>{ const a=agg.get(i); if(!a){ agg.set(i,{...s}); return; }
+  const add=(i,s)=>{ const a=agg.get(i); if(!a){ agg.set(i,{...s, _pq:s.qtySold||0}); return; }
+    if(s.price!=null && (a.price==null || (s.qtySold||0)>(a._pq||0))){ a.price=s.price; a._pq=s.qtySold||0; }
     for(const f of ['lines','qtyNet','qtySold','grossSold','grossNet','discNet']) a[f]=(a[f]||0)+(s[f]||0);
     if(s.min!=null) a.min=a.min==null?s.min:Math.min(a.min,s.min); if(s.max!=null) a.max=a.max==null?s.max:Math.max(a.max,s.max); };
   const byName=new Map(); products.forEach((p,i)=>{ for(const k of [p.n,...(p.al||[])]) byName.set(norm(k),i); });
@@ -358,7 +359,7 @@ function calculate(products, sales, rates){
 const COLS = {
   name:[/^produkt/], lines:[/rreshta/], qtyNet:[/sasia\s*neto/],
   qtySold:[/sasia\s*e\s*shitur/], grossSold:[/vlera\s*bruto.*pa\s*kthime/],
-  grossNet:[/vlera\s*bruto.*neto/], discNet:[/zbritja.*neto/], min:[/min/], max:[/max/]
+  grossNet:[/vlera\s*bruto.*neto/], discNet:[/zbritja.*neto/], min:[/min/], max:[/max/], price:[/pa\s*skonto|1\s*kuti|fiks/]
 };
 function toNum(v){
   if(v==null||v==='') return null;
@@ -380,7 +381,7 @@ function parseMatrix(M){
         if(!nm || /^total/i.test(nm)) continue;
         const g = k => (k in map) ? toNum(row[map[k]]) : null;
         out.push({ name:nm, lines:g('lines'), qtyNet:g('qtyNet')||0, qtySold:g('qtySold')||0,
-          grossSold:g('grossSold')||0, grossNet:g('grossNet')||0, discNet:g('discNet')||0, min:g('min'), max:g('max') });
+          grossSold:g('grossSold')||0, grossNet:g('grossNet')||0, discNet:g('discNet')||0, min:g('min'), max:g('max'), price:'price' in map ? g('price') : null });
       }
       return out;
     }
@@ -437,12 +438,14 @@ function parseLines(M){
       const agg=new Map();
       for(const l of L){
         const k=norm(l.name); let a=agg.get(k);
-        if(!a){ a={name:l.name.trim(), code:l.code||'', lines:0, qtyNet:0, qtySold:0, grossSold:0, grossNet:0, discNet:0, min:null, max:null}; agg.set(k,a); }
+        if(!a){ a={name:l.name.trim(), code:l.code||'', lines:0, qtyNet:0, qtySold:0, grossSold:0, grossNet:0, discNet:0, min:null, max:null, pq:new Map()}; agg.set(k,a); }
         a.lines++; a.qtyNet+=l.qty; a.grossNet+=l.gross; a.discNet+=l.disc;
-        if(l.qty>0){ a.qtySold+=l.qty; a.grossSold+=l.gross; const u=l.gross/l.qty; if(u>0){ a.min=a.min==null?u:Math.min(a.min,u); a.max=a.max==null?u:Math.max(a.max,u); } }
+        if(l.qty>0){ a.qtySold+=l.qty; a.grossSold+=l.gross; const u=l.gross/l.qty; if(u>0){ a.min=a.min==null?u:Math.min(a.min,u); a.max=a.max==null?u:Math.max(a.max,u); const pk=Math.round(u*100)/100; a.pq.set(pk,(a.pq.get(pk)||0)+l.qty); } }
       }
       const r2=x=>Math.round(x*100)/100;
-      const rows=[...agg.values()].map(a=>({...a, grossSold:r2(a.grossSold), grossNet:r2(a.grossNet), discNet:r2(a.discNet), min:a.min==null?null:r2(a.min), max:a.max==null?null:r2(a.max)}));
+      /* çmimi fiks për 1 kuti = çmimi pa skonto që del më shpesh në raport (sipas sasisë), jo mesatarja */
+      const fixed=pq=>{ let best=null, bq=-1; for(const [p,q] of pq) if(q>bq || (q===bq && p>best)){ best=p; bq=q; } return best; };
+      const rows=[...agg.values()].map(({pq,...a})=>({...a, price:fixed(pq), grossSold:a.grossSold, grossNet:a.grossNet, discNet:a.discNet, min:a.min==null?null:r2(a.min), max:a.max==null?null:r2(a.max)}));
       return { rows, format:F.label, dist:F.dist, note: skipped ? `${F.keepNote} U lanë jashtë ${skipped} rreshta (${skippedQty} copë) me vendor tjetër.` : '' };
     }
   }
@@ -526,7 +529,7 @@ function crossCheck(compRows, sales, list, rates, invs){
     if(!m){ unmatched.push(x); continue; }
     let g=G.get(m.p.n); if(!g){ g={p:m.p, rows:[]}; G.set(m.p.n,g); } g.rows.push(x);
   }
-  const sm=new Map(); for(const s of sales){ const m=matchProduct(s.name,list,s.code); if(m){ const k=m.p.n; const a=sm.get(k); if(a){ for(const f of ['lines','qtyNet','qtySold','grossSold','grossNet','discNet']) a[f]=(a[f]||0)+(s[f]||0); } else sm.set(k,{...s}); } }
+  const sm=new Map(); for(const s of sales){ const m=matchProduct(s.name,list,s.code); if(m){ const k=m.p.n; const a=sm.get(k); if(a){ if(s.price!=null && (a.price==null || (s.qtySold||0)>(a._pq||0))){ a.price=s.price; a._pq=s.qtySold||0; } for(const f of ['lines','qtyNet','qtySold','grossSold','grossNet','discNet']) a[f]=(a[f]||0)+(s[f]||0); } else sm.set(k,{...s, _pq:s.qtySold||0}); } }
   const out=[];
   const keys=new Set([...G.keys(), ...sm.keys()]);
   for(const k of keys){
@@ -537,7 +540,7 @@ function crossCheck(compRows, sales, list, rates, invs){
     const w=(f)=>{ if(!g) return null; const v=g.rows.filter(r=>r[f]!=null); const tq=v.reduce((a,r)=>a+Math.abs(r.qty||0),0); return v.length? (tq? v.reduce((a,r)=>a+r[f]*Math.abs(r.qty||0),0)/tq : v[0][f]) : null; };
     R.theirWsLek=w('wsLek'); R.theirDisc=w('disc'); R.theirCifNet=w('cifNet'); R.theirCif=w('cif'); R.theirRate=w('rate');
     R.akbpmCif=p?p.cif:null; R.rim=p?p.rim:false; R.officialRate=R.rim?rates.r:rates.n;
-    if(s){ R.qty=s.qtyNet; R.wsLek=s.qtySold?s.grossSold/s.qtySold:0; R.avgDisc=s.grossNet?s.discNet/s.grossNet:0; }
+    if(s){ R.qty=s.qtyNet; R.wsLek=s.price!=null&&+s.price>0?+s.price:(s.qtySold?s.grossSold/s.qtySold:0); R.avgDisc=s.grossNet?s.discNet/s.grossNet:0; }
     /* kontrolli i formulës me të dhënat e tyre */
     if(g){ let fsum=0, ok=true;
       for(const r of g.rows){ const ws=(r.wsEur!=null?r.wsEur:(r.wsLek&&r.rate?r.wsLek/r.rate:null));
@@ -673,7 +676,7 @@ const ST = { extra:0, extraSet:false, dist:'', month:'', rates:{...RATES_DEFAULT
 
 const $ = id => document.getElementById(id);
 const fmt = (v,d=2) => (v==null||!isFinite(v)) ? '' : v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
-const pct = v => (v==null||!isFinite(v)) ? '' : (v*100).toFixed(1)+'%';
+const pct = v => (v==null||!isFinite(v)) ? '' : (v*100).toFixed(2)+'%';
 const cls = v => v<0 ? ' class="neg"' : '';
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const MONTHS=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
@@ -773,7 +776,7 @@ function buildWorkbook(meta){
     ['Statusi', meta.status==='miratuar'?'MIRATUAR':meta.status==='kthyer'?'KTHYER ME VËREJTJE':'Në pritje të miratimit'],
     ['Distributori', meta.dist, 'Dërguar më '+dt(meta.prepAt)], meta.apBy?['Miratoi / shqyrtoi', meta.apBy, meta.apDate, meta.apNote||'']:[], [], H];
   for(const r of res.rows){ const ok=r.status==='ok';
-    data.push([r.name,r.cif,r.disc,rnd(r.cifNet),r.rim?'Po':'Jo',r.rate,rnd(r.wsLek),r.qtyNet??null,rnd(r.wsEur),rnd(r.avgDisc),rnd(r.wsNet),ok?rnd(r.profit):null,ok?rnd(r.pct):null,ok?rnd(r.pl,2):null,ok?rnd(r.p15box):null,ok?rnd(r.p15val,2):null,ok?rnd(r.comp,2):null,STATUS_LONG[r.status]]); }
+    data.push([r.name,r.cif,r.disc,rnd(r.cifNet),r.rim?'Po':'Jo',r.rate,rnd(r.wsLek),r.qtyNet??null,rnd(r.wsEur),r.avgDisc,rnd(r.wsNet),ok?rnd(r.profit):null,ok?rnd(r.pct):null,ok?rnd(r.pl,2):null,ok?rnd(r.p15box):null,ok?rnd(r.p15val,2):null,ok?rnd(r.comp,2):null,STATUS_LONG[r.status]]); }
   const tot=['TOTALI']; tot[16]=rnd(res.total,2); data.push(tot);
   if(ST.extra){ const z=['Zbritje mesatare shtesë '+rnd(ST.extra*100,2)+'%']; z[16]=-rnd(res.total*ST.extra,2); data.push(z);
     const f=['TOTALI PËR KOMPENSIM (pas zbritjes)']; f[16]=rnd(res.total*(1-ST.extra),2); data.push(f); }
@@ -781,7 +784,7 @@ function buildWorkbook(meta){
   const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(data);
   ws['!cols']=[{wch:48},...H.slice(1).map(()=>({wch:13}))];
   XLSX.utils.book_append_sheet(wb,ws,'Kompensimi');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Produkti','Nr. rreshtash','Sasia neto (me kthime)','Sasia e shitur (pa kthime)','Vlera bruto LEK (pa kthime)','Vlera bruto LEK neto','Zbritja LEK neto','Çmimi pa skonto LEK'],...ST.sales.map(s=>[s.name,s.lines,s.qtyNet,s.qtySold,s.grossSold,s.grossNet,s.discNet,s.qtySold?rnd(s.grossSold/s.qtySold,2):null])]),'Shitjet');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Produkti','Nr. rreshtash','Sasia neto (me kthime)','Sasia e shitur (pa kthime)','Vlera bruto LEK (pa kthime)','Vlera bruto LEK neto','Zbritja LEK neto','Çmimi pa skonto LEK (1 kuti)'],...ST.sales.map(s=>[s.name,s.lines,s.qtyNet,s.qtySold,s.grossSold,s.grossNet,s.discNet,s.price!=null?s.price:(s.qtySold?rnd(s.grossSold/s.qtySold,2):null)])]),'Shitjet');
   const json=JSON.stringify({...meta, rates:ST.rates, sales:ST.sales, salesSrc:ST.salesSrc});
   const chunks=[]; for(let i=0;i<json.length;i+=30000) chunks.push([json.slice(i,i+30000)]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['KOMPENSIMI_DATA_V1'],...chunks]),'_data');
@@ -892,7 +895,7 @@ function renderSales(){
   if(!ST.sales.length){ $('salesTbl').innerHTML='<tbody><tr><td class="l note">Nuk ka shitje të ngarkuara.</td></tr></tbody>'; return; }
   const names=new Set(products().map(p=>norm(p.n)));
   $('salesTbl').innerHTML='<thead><tr><th>Produkti</th><th>Rreshta</th><th>Sasia neto</th><th>Sasia e shitur</th><th>Vlera bruto LEK (pa kthime)</th><th>Vlera bruto LEK neto</th><th>Zbritja LEK neto</th><th>Çmimi pa skonto</th></tr></thead><tbody>'+
-    ST.sales.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.lines??''}</td><td${cls(s.qtyNet)}>${s.qtyNet}</td><td>${s.qtySold}</td><td>${fmt(s.grossSold)}</td><td${cls(s.grossNet)}>${fmt(s.grossNet)}</td><td>${fmt(s.discNet)}</td><td>${s.qtySold?fmt(s.grossSold/s.qtySold):''}</td></tr>`).join('')+'</tbody>';
+    ST.sales.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.lines??''}</td><td${cls(s.qtyNet)}>${s.qtyNet}</td><td>${s.qtySold}</td><td>${fmt(s.grossSold)}</td><td${cls(s.grossNet)}>${fmt(s.grossNet)}</td><td>${fmt(s.discNet)}</td><td>${s.price!=null?fmt(s.price):s.qtySold?fmt(s.grossSold/s.qtySold):''}</td></tr>`).join('')+'</tbody>';
 }
 
 /* ===== Kontrolli ===== */
