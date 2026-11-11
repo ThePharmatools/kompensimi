@@ -704,7 +704,16 @@ function syncHeader(){
   ['dist','month','rateR','rateN'].forEach(id=>$(id).disabled=lock);
 }
 $('dist').onchange=e=>{ ST.dist=e.target.value; renderAll(); };
-$('month').onchange=e=>{ ST.month=e.target.value; renderCalc(); };
+$('month').onchange=e=>{ ST.month=e.target.value; ST.monthGuess=false; renderCalc(); if(typeof renderXC==='function') renderXC(); };
+/* muaji nga emri i file-it: "Asgeto_May_approved", "10-Tetor_2026", "Shitje Gusht 26" */
+function guessMonth(...names){
+  const M=[[/\b(jan(uary)?|janar)/,1],[/\b(feb(ruary)?|shkurt)/,2],[/\b(mar(ch)?|mars)\b/,3],[/\b(apr(il)?|prill)/,4],[/\b(may|maj)\b/,5],[/\b(june?|qershor)/,6],[/\b(july?|korrik)/,7],[/\b(aug(ust)?|gusht)/,8],[/\b(sep(t(ember)?)?|shtator)/,9],[/\b(oct(ober)?|tetor)/,10],[/\b(nov(ember)?|n[eë]ntor)/,11],[/\b(dec(ember)?|dhjetor)/,12]];
+  for(const n of names){ const s=String(n||'').toLowerCase().replace(/[_\-.]+/g,' '); for(const [re,m] of M) if(re.test(s)){
+    const y=(s.match(/\b(20\d{2})\b/)||[])[1] || ((s.match(/\b(\d{2})\b(?!.*\d)/)||[])[1] ? '20'+s.match(/\b(\d{2})\b(?!.*\d)/)[1] : null);
+    const now=new Date(), cy=now.getFullYear(); let yy=y?+y:(m>now.getMonth()+1?cy-1:cy); if(yy<2020||yy>cy+1) yy=cy;
+    return `${yy}-${String(m).padStart(2,'0')}`; } }
+  return '';
+}
 const setExtra=v=>{ const n=parseFloat(String(v).replace(',','.')); ST.extra = isFinite(n)&&n>0 ? Math.min(n,100)/100 : 0; ST.extraSet=true; renderAll(); };
 $('kExtra').oninput=e=>setExtra(e.target.value); $('xcExtra').oninput=e=>setExtra(e.target.value);
 $('rateR').oninput=e=>{ ST.rates.r=+e.target.value||RATES_DEFAULT.r; renderAll(); };
@@ -1099,6 +1108,7 @@ $('xcFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f||!
 };
 $('xcSheet').onchange=e=>{ const s=XC.sheets.find(x=>x[0]===e.target.value); XC.sheet=s[0]; XC.rows=s[1]; renderXC(); };
 function renderXC(){
+  if((!ST.month || ST.monthGuess) && ST.mode==='prep' && (XC.file || ST.salesSrc)){ const g=guessMonth(XC.file, ST.salesSrc); if(g && g!==ST.month){ ST.month=g; ST.monthGuess=true; $('month').value=g; } }
   $('xcFileInfo').textContent = XC.file ? `${XC.file} · fleta "${XC.sheet}" · ${XC.rows.length} rreshta` : 'Asnjë file ende';
   $('xcSalesInfo').innerHTML = ST.sales.length ? esc(ST.salesSrc) + ` · ${ST.sales.length} produkte` : 'Ngarko raportin e shitjeve te skeda <span class="link" onclick="showTab(\'t-sales\')">Shitjet</span>.';
   if(!XC.rows || !ST.sales.length){ $('xcOut').style.display='none'; msg('xcMsg','', ''); return; }
