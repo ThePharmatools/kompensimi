@@ -1325,20 +1325,21 @@ function fifo(dist, prod, ym, q){
   const lots=invsFor(dist).filter(x=>x.prod===prod && x.netUnit!=null && x.qty>0 && String(x.date||'').slice(0,7)<=ym)
     .sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.inv).localeCompare(String(b.inv)));
   if(!lots.length) return null;
-  const H=(histLoad()[dist])||{};
-  let prior=0; const missing=[];
-  for(let m=String(lots[0].date).slice(0,7); m<ym; m=nextYm(m)){ const h=H[m]; if(!h) missing.push(m); else prior+=+(h.q[prod]||0); }
+  const H=(histLoad()[dist])||{}, hs=Object.keys(H).sort()[0];
+  let prior=0; const missing=[]; let assumed='';
+  let m0=String(lots[0].date).slice(0,7); if(hs && m0<hs){ assumed=hs; m0=hs; } /* para fillimit të historisë: supozohet që importet s'janë shitur ende */
+  for(let m=m0; m<ym; m=nextYm(m)){ const h=H[m]; if(!h) missing.push(m); else prior+=+(h.q[prod]||0); }
   if(missing.length) return { ok:false, missing };
   let skip=Math.max(0,prior), need=Math.abs(+q)||0, take=[], i=0;
   for(; i<lots.length && skip>0; i++){ if(skip>=lots[i].qty){ skip-=lots[i].qty; continue; } break; }
   let left = i<lots.length ? lots[i].qty-skip : 0;
   let j=i, sumQ=0, sumN=0, sumC=0;
-  if(need===0){ const L=lots[Math.min(j,lots.length-1)]; return { ok:true, cifNet:L.netUnit, cif:L.cif, label:`${L.inv}`, lots:[], prior }; }
+  if(need===0){ const L=lots[Math.min(j,lots.length-1)]; return { ok:true, cifNet:L.netUnit, cif:L.cif, label:`${L.inv}`, lots:[], prior, assumed }; }
   while(need>0 && j<lots.length){ const avail = j===i ? left : lots[j].qty; const x=Math.min(avail,need);
     if(x>0){ take.push({inv:lots[j].inv, date:lots[j].date, q:x, net:lots[j].netUnit, cif:lots[j].cif}); sumQ+=x; sumN+=x*lots[j].netUnit; sumC+=x*lots[j].cif; need-=x; } j++; }
   let over=0; if(need>0){ const L=lots[lots.length-1]; over=need; take.push({inv:L.inv, date:L.date, q:need, net:L.netUnit, cif:L.cif, over:true}); sumQ+=need; sumN+=need*L.netUnit; sumC+=need*L.cif; }
   const label=take.map(x=>`${x.inv} ${String(x.date).slice(0,10).split('-').reverse().join('.')}: ${Math.round(x.q)} kuti × ${x.net.toFixed(3)}${x.over?' (mbi importet)':''}`).join(' + ');
-  return { ok:true, cifNet:sumN/sumQ, cif:sumC/sumQ, label, lots:take, prior, over };
+  return { ok:true, cifNet:sumN/sumQ, cif:sumC/sumQ, label:label+(assumed?` (pa shitje të njohura para ${monthShort(assumed)})`:''), lots:take, prior, over, assumed };
 }
 const FIFO_HOOK = (prod, q) => (ST.dist && ST.month && INV.rows.length) ? fifo(ST.dist, prod, ST.month, q) : null;
 function renderHist(){
@@ -1352,12 +1353,41 @@ function renderHist(){
       : `<span class="pill p-bad" title="Mungon raporti i këtij muaji">${monthShort(m)} mungon</span>`).join('')}</div></div>`; }).join('');
   box.querySelectorAll('[data-del]').forEach(a=>a.onclick=e=>{ e.preventDefault(); const [d,m]=a.dataset.del.split('|'); if(!confirm(`Të fshihen shitjet e ${monthShort(m)} për ${d}?`)) return; const H=histLoad(); delete H[d][m]; histStore(H); renderAll(); });
 }
+/* Databaza e shitjeve (fleta "Databasa"): Muaji · Trimed/Intermed · Produkti · Sasia · Cmimi Me TVSH · Vlera Neto Me TVSH
+   Pharmaone = Asgeto (vetëm PH1); Pharmaone2 (vendor tjetër) dhe depot e tjera nuk llogariten. */
+const DB_DIST = s => { s=norm(s); if(s==='trimed') return 'Trimed'; if(s==='intermed') return 'Intermed'; if(s==='pharmaone'||s==='pharma one'||s==='asgeto') return 'Asgeto'; return ''; };
+function histFromDatabase(M, fname){
+  let hi=-1, c={};
+  for(let i=0;i<Math.min(M.length,10);i++){ const h=(M[i]||[]).map(norm);
+    const ix=re=>h.findIndex(x=>x&&re.test(x));
+    c={ month:ix(/^muaji$/), dist:ix(/trimed\s*\/\s*intermed|^distributori$/), date:ix(/^data$/), prod:ix(/produkti\s*i\s*unifikuar/), art:ix(/artikulli\s*-\s*pershkrimi/), qty:ix(/^sasia$/), price:ix(/^cmimi\s*me\s*tvsh/), net:ix(/vlera\s*neto/) };
+    if(c.dist>=0 && c.qty>=0 && (c.prod>=0||c.art>=0) && (c.month>=0||c.date>=0)){ hi=i; break; } }
+  if(hi<0) return null;
+  const G=new Map(), skipped={};
+  for(let r=hi+1;r<M.length;r++){ const x=M[r]; if(!x) continue;
+    const d=DB_DIST(x[c.dist]); if(!d){ const k=String(x[c.dist]??'').trim(); if(k) skipped[k]=(skipped[k]||0)+1; continue; }
+    const ym=xlDate(c.month>=0?x[c.month]:x[c.date]).slice(0,7); if(!ym) continue;
+    const name=String((c.art>=0&&x[c.art])||x[c.prod]||'').trim(), qty=toNum(x[c.qty]); if(!name||!qty) continue;
+    const pr=c.price>=0?toNum(x[c.price])||0:0, net=c.net>=0?toNum(x[c.net])??0:0, gross=pr*qty;
+    const key=d+'|'+ym; let A=G.get(key); if(!A){ A=new Map(); G.set(key,A); }
+    const k=norm(name); const a=A.get(k)||{name, lines:0, qtyNet:0, qtySold:0, grossSold:0, grossNet:0, discNet:0}; a.lines++; a.qtyNet+=qty; a.grossNet+=gross; a.discNet+=gross-net; if(qty>0){ a.qtySold+=qty; a.grossSold+=gross; } A.set(k,a); }
+  const done=[], bad=[];
+  for(const [key,A] of [...G.entries()].sort()){ const [d,ym]=key.split('|'); histSave(d, ym, [...A.values()], fname+' · Databasa'); done.push(`${d} ${monthShort(ym)}`); }
+  if(!done.length) bad.push(`${fname}: fleta Databasa s'ka rreshta për Trimed, Intermed ose Pharmaone`);
+  else if(Object.keys(skipped).length) bad.push(`U lanë jashtë (s'janë distributorët tanë): ${Object.entries(skipped).map(([k,n])=>`${k} ${n}`).join(', ')}`);
+  return { done, bad };
+}
+
 function addHistFiles(files){
   if(!needXlsx()) return; const out=[], bad=[]; let n=0;
+  msg('histMsg','info','Duke lexuar… (një databazë e madhe mund të dojë disa sekonda)');
   [...files].forEach(f=>{ const rd=new FileReader(); rd.onload=e=>{ try{
-      const wb=XLSX.read(e.target.result,{type:'array'}); let ok=false;
+      const names=XLSX.read(e.target.result,{type:'array',bookSheets:true}).SheetNames, dbn=names.find(n=>/databas/i.test(n));
+      const wb=XLSX.read(e.target.result,{type:'array',dense:true,cellDates:false,...(dbn?{sheets:[dbn]}:{})}); let ok=false;
+      if(dbn){ const r=histFromDatabase(XLSX.utils.sheet_to_json(wb.Sheets[dbn],{header:1,raw:true,defval:null,blankrows:false}), f.name);
+        if(r){ out.push(...r.done); bad.push(...r.bad); ok=true; } }
       const order=[...wb.SheetNames].sort((a,b)=>(/sales|shitje|export/i.test(b))-(/sales|shitje|export/i.test(a)));
-      for(const nm of order){ const p=parseAny(XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,raw:true,defval:null})); if(!p||!p.rows.length) continue;
+      if(!ok) for(const nm of order){ const p=parseAny(XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,raw:true,defval:null})); if(!p||!p.rows.length) continue;
         const d=p.dist||ST.dist, m=p.month||guessMonth(f.name);
         if(!d||!m){ bad.push(`${f.name}: ${!d?'zgjidh distributorin lart':'nuk u gjet muaji'}`); ok=true; break; }
         histSave(d, m, p.rows, f.name); out.push(`${f.name} → ${d}, ${monthShort(m)}`); ok=true; break; }
@@ -1369,7 +1399,7 @@ function addHistFiles(files){
           histSave(d, m, [...agg.values()], f.name+' (sasitë nga Excel-i i kompensimit)'); out.push(`${f.name} → ${d}, ${monthShort(m)} (nga Excel-i i kompensimit)`); ok=true; break; } }
       if(!ok) bad.push(`${f.name}: nuk u gjet raport shitjesh`);
     }catch(err){ bad.push(`${f.name}: ${err.message}`); }
-    if(++n===files.length){ msg('histMsg', bad.length?'warn':'ok', (out.length?'U ruajtën: '+out.map(esc).join('; '):'')+(bad.length?'<br>Nuk u ruajtën: '+bad.map(esc).join('; '):'')); renderAll(); } };
+    if(++n===files.length){ msg('histMsg', out.length?'ok':'warn', (out.length?'U ruajtën: '+out.map(esc).join('; '):'')+(bad.length?'<br>'+bad.map(esc).join('; '):'')); renderAll(); } };
     rd.readAsArrayBuffer(f); });
 }
 
