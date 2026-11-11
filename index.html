@@ -102,6 +102,7 @@ tr.excl td{color:var(--muted)}
     <label class="f">Kursi me rimb.<input type="number" step="0.01" id="rateR"></label>
     <label class="f">Kursi pa rimb.<input type="number" step="0.01" id="rateN"></label>
     <button id="btnOpen" class="noprint">Hap file për miratim</button>
+    <button id="btnReset" class="noprint" title="Fillo nga e para: fshin shitjet, Excel-in e distributorit dhe zbritjen shtesë">⟲ Reset</button>
     <input type="file" id="openFile" accept=".xlsx" hidden>
    </div>
   </div>
@@ -838,6 +839,15 @@ function decide(status){
 $('btnApprove').onclick=()=>decide('miratuar');
 $('btnReject').onclick=()=>decide('kthyer');
 $('btnPrint').onclick=$('btnPrint2').onclick=()=>window.print();
+$('btnReset').onclick=()=>{
+  if(!confirm('Të fillohet nga e para?\n\nFshihen: raporti i shitjeve, Excel-i i distributorit (Cross-check), muaji dhe zbritja shtesë.\nMbeten: faturat e HQ dhe lista e produkteve & CIF.')) return;
+  Object.assign(ST,{ mode:'prep', file:null, prev:null, sales:[], salesSrc:'', salesNote:'', savedOnce:false, month:'', rates:{...RATES_DEFAULT}, extra:0, extraSet:false });
+  Object.assign(XC,{ file:null, sheets:[], sheet:'', rows:null, res:null });
+  ['calcMsg','salesMsg','xcMsg','invMsg'].forEach(id=>msg(id,'',''));
+  document.querySelectorAll('input[type=file]').forEach(i=>{ try{ i.value=''; }catch(e){} });
+  ['kExtra','xcExtra'].forEach(id=>{ if($(id)) $(id).value=''; });
+  syncHeader(); renderAll(); renderXC(); showTab('t-xc'); window.scrollTo(0,0);
+};
 $('btnClose').onclick=()=>{ Object.assign(ST,{mode:'prep',file:null,sales:[],salesSrc:'',month:'',rates:{...RATES_DEFAULT}}); syncHeader(); renderAll(); };
 
 /* ===== Shitjet ===== */
