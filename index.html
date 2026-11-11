@@ -101,7 +101,6 @@ tr.excl td{color:var(--muted)}
     <label class="f">Muaji<input type="month" id="month"></label>
     <label class="f">Kursi me rimb.<input type="number" step="0.01" id="rateR"></label>
     <label class="f">Kursi pa rimb.<input type="number" step="0.01" id="rateN"></label>
-    <button id="btnOpen" class="noprint">Hap file për miratim</button>
     <button id="btnReset" class="noprint" title="Fillo nga e para: fshin shitjet, Excel-in e distributorit dhe zbritjen shtesë">⟲ Reset</button>
     <input type="file" id="openFile" accept=".xlsx" hidden>
    </div>
@@ -214,7 +213,7 @@ tr.excl td{color:var(--muted)}
    <button class="pri" id="btnSave">Ruaj (shkarko file-in për miratim)</button>
    <button id="btnPrint">Printo / PDF</button>
   </div>
-  <p class="note">Shkarkohet një file Excel me llogaritjen. Dërgoje me email te Abdi Ibrahim; ata e hapin në këtë faqe me "Hap file për miratim".</p>
+  <p class="note">Shkarkohet një file Excel me llogaritjen. Dërgoje me email te Abdi Ibrahim; ata e hapin në këtë faqe duke e ngarkuar te Shitjet.</p>
  </div>
 
  <!-- Abdi Ibrahim: mirato -->
@@ -817,8 +816,8 @@ function readSavedFile(f, cb){
   }catch(err){ alert('Nuk u hap dot: '+err.message); } };
   rd.readAsArrayBuffer(f);
 }
-$('btnOpen').onclick=()=>$('openFile').click();
-$('openFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+$('openFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) openSaved(f); };
+function openSaved(f){
   readSavedFile(f, d=>{
     if(!DISTS.includes(d.dist)){ alert('Distributor i panjohur: '+d.dist); return; }
     Object.assign(ST,{ mode:'review', file:d, dist:d.dist, month:d.month, rates:{...d.rates}, sales:d.sales, salesSrc:`${f.name}`, extra:+d.extra||0, extraSet:true });
@@ -871,7 +870,7 @@ function readSales(f){
   const rd=new FileReader();
   rd.onload=e=>{ try{
     const wb=XLSX.read(e.target.result,{type:'array',cellFormula:true});
-    if(wb.Sheets['_data']){ msg('salesMsg','warn','Ky është një file kompensimi i ruajtur. Për ta miratuar përdor "Hap file për miratim" lart.'); return; }
+    if(wb.Sheets['_data']){ openSaved(f); return; } /* file kompensimi i ruajtur nga kjo faqe: hapet për shqyrtim */
     const order=[...wb.SheetNames].sort((a,b)=>(/sales|shitje|export/i.test(b))-(/sales|shitje|export/i.test(a)));
     const isComp = wb.SheetNames.some(n=>parseCompMatrix(sheetCells(wb.Sheets[n])));
     if(isComp){ /* file kompensimi (p.sh. Trimed "Profit&Lost") → shkon te Cross-check */
