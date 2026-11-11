@@ -311,9 +311,10 @@ const MIN_DISC = 0.009; /* skonto totale 0–0.9% → nuk kompensohet */
 const isZeroDisc = d => (d||0) <= MIN_DISC + 1e-9;
 const norm = s => String(s ?? '').trim().replace(/\s+/g,' ').toLowerCase();
 
-function calcRow(p, s, rates){
+function calcRow(p, s, rates, ov){
   const r = { name:p.n, alias:(p.al||[])[0]||'', cif:+p.cif, disc:+p.disc, rim:!!p.rim };
-  r.cifNet = r.cif * (1 - r.disc);
+  r.cifNet = r.cif * (1 - r.disc); r.cifSrc = 'Lista 2026';
+  if(ov && ov.cifNet!=null && isFinite(ov.cifNet)){ r.cifNet=+ov.cifNet; if(ov.cif!=null) r.cif=+ov.cif; r.disc = r.cif ? 1-r.cifNet/r.cif : 0; r.cifSrc=ov.src||''; }
   r.rate = r.rim ? rates.r : rates.n;
   if(!s){ r.status='nosale'; r.comp=0; return r; }
   r.qtyNet = +s.qtyNet; r.qtySold = +s.qtySold;
@@ -338,7 +339,7 @@ function calcRow(p, s, rates){
   return r;
 }
 
-function calculate(products, sales, rates){
+function calculate(products, sales, rates, cifMap){
   /* 1) emri i njohur ose kodi SAP, 2) markë + doza; disa emra për të njëjtin produkt bashkohen */
   const agg=new Map(), outside=[];
   const add=(i,s)=>{ const a=agg.get(i); if(!a){ agg.set(i,{...s, _pq:s.qtySold||0}); return; }
@@ -352,7 +353,7 @@ function calculate(products, sales, rates){
     if(i==null){ const m=matchProduct(s.name, products, s.code); if(m) i=products.indexOf(m.p); }
     if(i==null || i<0) outside.push(s); else add(i,s);
   }
-  const rows = products.map((p,i) => calcRow(p, agg.get(i), rates));
+  const rows = products.map((p,i) => calcRow(p, agg.get(i), rates, cifMap ? cifMap.get(p.n) : null));
   const total = rows.reduce((a,r) => a + (r.status==='ok' ? r.comp : 0), 0);
   return { rows, outside, total };
 }
@@ -728,8 +729,25 @@ function showTab(t){
 
 /* ===== Llogaritja ===== */
 let LAST=null;
+
+/* CIF Net për Llogaritjen = i njëjti si te Cross-check:
+   1) Excel-i i distributorit i kontrolluar me faturat (CIF Net i përdorur te Cross-check),
+   2) përndryshe fatura e fundit HQ deri në muajin e shitjeve, 3) përndryshe lista 2026 */
+function cifSources(){
+  const M=new Map();
+  if(XC.res && XC.res.rows && ST.sales.length){
+    for(const R of XC.res.rows){ if(R.usedCifNet==null || !isFinite(R.usedCifNet)) continue;
+      const src = R.invCifNet!=null && R.rows && R.rows.length ? 'Fatura HQ (Excel)' : R.invCifNet!=null ? 'Fatura e fundit HQ' : R.theirCifNet!=null ? 'Excel-i i distributorit' : 'Lista 2026';
+      M.set(R.name,{cifNet:R.usedCifNet, cif:R.invCif!=null?R.invCif:R.theirCif!=null?R.theirCif:null, src}); }
+    return M; }
+  const invs=typeof invsFor==='function' ? invsFor(ST.dist) : [];
+  if(invs && invs.length){
+    for(const p of products()){ const L=invs.filter(x=>x.prod===p.n && x.netUnit!=null && (!ST.month || String(x.date||'').slice(0,7)<=ST.month)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0];
+      if(L) M.set(p.n,{cifNet:L.netUnit, cif:L.cif, src:'Fatura '+L.inv}); } }
+  return M;
+}
 function renderCalc(){
-  const res = calculate(products(), ST.sales, ST.rates); LAST=res;
+  const res = calculate(products(), ST.sales, ST.rates, cifSources()); LAST=res;
   const has = ST.sales.length>0;
   $('printTitle').textContent = `Kompensimi Abdi Ibrahim – ${ST.dist} · ${monthLabel(ST.month)}`;
   res.final = res.total*(1-ST.extra); res.extraEur = res.total-res.final;
@@ -746,7 +764,7 @@ function renderCalc(){
     if(r.status==='nosale') continue;
     const ok = r.status==='ok' || r.status==='p15';
     const st = `<span class="pill ${ok?'p-ok':r.status==='noqty'?'p-bad':'p-no'}">${STATUS[r.status]}</span>`;
-    h += `<tr class="${ok?'':'excl'}"><td>${esc(r.name)}</td><td>${fmt(r.cif)}</td><td>${pct(r.disc)}</td><td>${fmt(r.cifNet)}</td><td>${r.rim?'Po':'Jo'}</td>
+    h += `<tr class="${ok?'':'excl'}"><td>${esc(r.name)}</td><td>${fmt(r.cif)}</td><td>${pct(r.disc)}</td><td title="Burimi: ${esc(r.cifSrc)}">${fmt(r.cifNet,3)}<div class="note" style="font-size:10.5px;white-space:nowrap">${esc(r.cifSrc)}</div></td><td>${r.rim?'Po':'Jo'}</td>
       <td>${fmt(r.wsLek)}</td><td${cls(r.qtyNet)}>${r.qtyNet??''}</td><td>${fmt(r.wsEur)}</td><td>${pct(r.avgDisc)}</td><td>${fmt(r.wsNet)}</td>
       <td${cls(r.profit)}>${ok?fmt(r.profit):''}</td><td${cls(r.pct)}>${ok?pct(r.pct):''}</td><td${cls(r.pl)}>${ok?fmt(r.pl):''}</td><td>${ok?fmt(r.p15box):''}</td><td>${ok?fmt(r.p15val):''}</td>
       <td${cls(r.comp)}><b>${ok?fmt(r.comp):''}</b></td><td class="l">${st}</td></tr>`;
@@ -1141,6 +1159,7 @@ function renderXC(){
   }
   h+=`</tbody><tfoot><tr><td>TOTALI</td><td colspan="11"></td><td>${fmt(res.theirTotal)}</td><td>${fmt(res.ourTotal)}</td><td${cls(res.theirTotal-res.ourTotal)}>${fmt(res.theirTotal-res.ourTotal)}</td><td></td></tr></tfoot>`;
   $('xcTbl').innerHTML=h;
+  if(!window._inCalcSync){ window._inCalcSync=true; try{ renderCalc(); } finally{ window._inCalcSync=false; } } /* Llogaritja me të njëjtin CIF Net */
 }
 $('xcExport').onclick=()=>{
   if(!XC.res||!needXlsx()) return;
@@ -1264,7 +1283,7 @@ $('invExport').onclick=()=>{ if(!needXlsx()) return; const R=invFiltered();
     ...R.map(x=>[x.dist,x.cust,x.inv,x.date,x.batch,x.mat,x.desc,x.prod,x.qty,x.cif,rnd(x.gross,2),rnd(x.discEur,2),rnd(x.discPct),rnd(x.net,2),rnd(x.netUnit)])]),'Faturat');
   XLSX.writeFile(wb,`Faturat_${$('invDist').value||'te-gjithe'}.xlsx`); };
 
-function renderAll(){ relinkInv(); renderInv(); renderCalc(); renderSales(); renderProd(); renderXC(); if($('t-check').classList.contains('on')) renderCheck(); }
+function renderAll(){ relinkInv(); renderInv(); renderXC(); renderCalc(); renderSales(); renderProd(); if($('t-check').classList.contains('on')) renderCheck(); }
 syncHeader(); renderAll(); renderAdmin(); loadOfficialList();
 </script>
 </body>
