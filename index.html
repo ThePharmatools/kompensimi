@@ -314,6 +314,9 @@ tr.excl td{color:var(--muted)}
 /* ===== Llogaritja (pa DOM) ===== */
 const MAX_PROFIT = 0.15; /* fitim ≥ 15% → pa kompensim */
 const MIN_DISC = 0.009; /* skonto totale 0–0.9% → nuk kompensohet */
+/* produkte që nuk kompensohen për një distributor të caktuar */
+const DIST_EXCL = { Asgeto:[ [/^onceair\b/i, 'OnceAir nuk kompensohet për Asgeton'] ] };
+const exclFor = name => { const d=(typeof ST!=='undefined'&&ST.dist)||''; const x=(DIST_EXCL[d]||[]).find(([re])=>re.test(String(name||''))); return x?x[1]:''; };
 const isZeroDisc = d => (d||0) <= MIN_DISC + 1e-9;
 const norm = s => String(s ?? '').trim().replace(/\s+/g,' ').toLowerCase();
 
@@ -331,8 +334,8 @@ function calcRow(p, s, rates, ov){
   if(!isFinite(r.avgDisc)) r.avgDisc = 0;
   r.min = s.min; r.max = s.max;
   r.wsNet = r.wsEur * (1 - r.avgDisc);
+  if(p.excl || exclFor(p.n)){ r.status='excl'; r.comp=0; r.exclWhy=exclFor(p.n)||''; return r; }
   if(isZeroDisc(r.avgDisc)){ r.status='nodisc'; r.comp=0; return r; }
-  if(p.excl){ r.status='excl'; r.comp=0; return r; }
   r.profit = r.wsNet - r.cifNet;
   r.pct = r.wsNet ? r.profit / r.wsNet : 0;
   r.pl = r.profit * r.qtyNet;
@@ -589,7 +592,8 @@ function crossCheck(compRows, sales, list, rates, invs){
       else if(F && F.missing && F.missing.length) R.issues.push(['p-info',`FIFO s'u aplikua: mungojnë shitjet e ${F.missing.map(monthShort).join(', ')}`]);
       const cifNet = R.invCifNet!=null ? R.invCifNet : R.theirCifNet!=null ? R.theirCifNet : (p? p.cif*(1-p.disc) : 0);
       const wn=R.wsLek/R.officialRate*(1-R.avgDisc); R.ourProfitPct = wn ? (wn-cifNet)/wn : 0;
-      R.ourComp = (isZeroDisc(R.avgDisc) || R.ourProfitPct>=MAX_PROFIT-1e-9) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
+      const ex=exclFor(k); if(ex) R.issues.push(['p-no',ex]);
+      R.ourComp = (ex || isZeroDisc(R.avgDisc) || R.ourProfitPct>=MAX_PROFIT-1e-9) ? 0 : wn*R.qty*0.15-(wn-cifNet)*R.qty; R.usedCifNet=cifNet;
       if(!isZeroDisc(R.avgDisc) && R.ourProfitPct>=MAX_PROFIT-1e-9) R.issues.push(['p-no',`Fitim ${(R.ourProfitPct*100).toFixed(1)}% ≥ 15% – nuk kompensohet`]);
       if(isZeroDisc(R.avgDisc)) R.issues.push(['p-no',`Skonto ${(R.avgDisc*100).toFixed(2)}% (0–0.9%) – nuk kompensohet`]);
     } else R.ourComp=0;
@@ -705,7 +709,7 @@ const MONTHS=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','
 const monthLabel = m => { if(!m) return '(pa muaj)'; const [y,mm]=m.split('-'); return MONTHS[+mm-1]+' '+y; };
 const dt = t => t ? new Date(t).toLocaleString('sq-AL',{dateStyle:'medium',timeStyle:'short'}) : '';
 const STATUS={ok:'Kompensohet',p15:'Fitim ≥ 15%',nodisc:'Skonto 0–0.9%',excl:'Përjashtuar',nosale:'Pa shitje'};
-const STATUS_LONG={ok:'Kompensohet',p15:'Fitim ≥ 15% – nuk kompensohet',nodisc:'Skonto 0–0.9% – nuk kompensohet',excl:'Përjashtuar',nosale:'Pa shitje'};
+const STATUS_LONG={ok:'Kompensohet',p15:'Fitim ≥ 15% – nuk kompensohet',nodisc:'Skonto 0–0.9% – nuk kompensohet',excl:'Përjashtuar nga kompensimi',nosale:'Pa shitje'};
 function msg(el, type, text){ $(el).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : ''; }
 const products = () => PRODUCT_LIST;
 const needXlsx = () => { if(typeof XLSX==='undefined'){ alert('Libraria Excel nuk u ngarkua. Kontrollo internetin dhe rifresko faqen.'); return false; } return true; };
@@ -828,7 +832,7 @@ function buildWorkbook(meta){
     ['Statusi', meta.status==='miratuar'?'MIRATUAR':meta.status==='kthyer'?'KTHYER ME VËREJTJE':'Në pritje të miratimit'],
     ['Distributori', meta.dist, 'Dërguar më '+dt(meta.prepAt)], meta.apBy?['Miratoi / shqyrtoi', meta.apBy, meta.apDate, meta.apNote||'']:[], [], H];
   for(const r of res.rows){ const ok=r.status==='ok';
-    data.push([r.name,r.cif,r.disc,rnd(r.cifNet),r.rim?'Po':'Jo',r.rate,rnd(r.wsLek),r.qtyNet??null,rnd(r.wsEur),r.avgDisc,rnd(r.wsNet),ok?rnd(r.profit):null,ok?rnd(r.pct):null,ok?rnd(r.pl,2):null,ok?rnd(r.p15box):null,ok?rnd(r.p15val,2):null,ok?rnd(r.comp,2):null,STATUS_LONG[r.status]]); }
+    data.push([r.name,r.cif,r.disc,rnd(r.cifNet),r.rim?'Po':'Jo',r.rate,rnd(r.wsLek),r.qtyNet??null,rnd(r.wsEur),r.avgDisc,rnd(r.wsNet),ok?rnd(r.profit):null,ok?rnd(r.pct):null,ok?rnd(r.pl,2):null,ok?rnd(r.p15box):null,ok?rnd(r.p15val,2):null,ok?rnd(r.comp,2):null,r.exclWhy||STATUS_LONG[r.status]]); }
   const tot=['TOTALI']; tot[16]=rnd(res.total,2); data.push(tot);
   if(ST.extra){ const z=['Zbritje mesatare shtesë '+rnd(ST.extra*100,2)+'%']; z[16]=-rnd(res.total*ST.extra,2); data.push(z);
     const f=['TOTALI PËR KOMPENSIM (pas zbritjes)']; f[16]=rnd(res.total*(1-ST.extra),2); data.push(f); }
@@ -977,7 +981,7 @@ function renderCheck(){
     if(r.min!=null && r.max!=null && Math.abs(r.max-r.min)>0.005) notes.push(['p-warn','Shitur me disa çmime']);
     if(r.qtyNet<0) notes.push(['p-warn','Kthime më shumë se shitje (sasi negative)']);
     if(r.status==='nosale') notes.push(['p-no','Pa shitje këtë muaj']);
-    if(r.status==='nodisc'||r.status==='p15') notes.push(['p-no',STATUS_LONG[r.status]]);
+    if(r.status==='nodisc'||r.status==='p15'||r.status==='excl') notes.push(['p-no',r.exclWhy||STATUS_LONG[r.status]]);
     if(r.status==='ok' && r.comp<0) notes.push(['p-info','Kompensim negativ']);
     let dP=null,dQ=null;
     if(p && p.wsLek!=null && r.wsLek!=null){ dP=r.wsLek-p.wsLek; if(Math.abs(dP)>0.005) notes.push(['p-warn','Çmimi ndryshoi']); }
